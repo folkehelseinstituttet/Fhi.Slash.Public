@@ -106,7 +106,7 @@ Les mer om HelseID og teknisk dokumentasjon her:
 API-tjenesten benytter Swagger for å dokumentere samtlige meldingstyper og versjoner.
 Du finner Swagger-portalen ved å trykke på linken nedenfor:
 
-[https://app-mottak-test.azurewebsites.net/swagger/index.html](https://app-mottak-test.azurewebsites.net/swagger/index.html)
+[https://app-mottak-test.azurewebsites.net/swagger/index.html](https://app-mottak-api-test.azurewebsites.net/swagger/index.html)
 
 Portalen viser endepunkter for API-et.
 
@@ -384,21 +384,19 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 
 Ulike miljøer og variabler pr miljø.
 
-### API Endepunkter
+#### API Endepunkter
 
-- QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett)
+- QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.qa.fihr.no/swagger/index.html))
 
 <div style="page-break-after: always"></div>
 
 ## Eksempelkode
-
-Testklient som tar for seg en innsending av melding i sin helhet mot API-tjenesten.
-
-
+Det finnes kode for en testklient som håndterer innsending av meldinger mot API-tjenesten. 
+Du finner koden for testklienten SlashMessengerCLI [her](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/tree/public-github/src/Fhi.Slash.Public.SlashMessengerCLI).
 
 <div style="page-break-after: always"></div>
 
 ## Referanser
 - [Hybrid Krypteringssystem](https://en.wikipedia.org/wiki/Hybrid_cryptosystem)
-- [NHN DPoP](https://utviklerportal.nhn.no/no/informasjonstjenester/helseid/bruksmoenstre-og-eksempelkode/bruk-av-helseid/docs/dpop/dpopmd/)
+- [NHN DPoP](https://www.nhn.no/tjenester/helseid/sikkerhetskonsepter-i-kontekst-av-helseid/dpop-for-produkteiere-og-arkitekter)
 - [NHN HelseID](https://www.nhn.no/helseid/)
