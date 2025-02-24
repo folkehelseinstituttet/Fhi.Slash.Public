@@ -106,7 +106,7 @@ Les mer om HelseID og teknisk dokumentasjon her:
 API-tjenesten benytter Swagger for å dokumentere samtlige meldingstyper og versjoner.
 Du finner Swagger-portalen ved å trykke på linken nedenfor:
 
-[https://app-mottak-test.azurewebsites.net/swagger/index.html](https://app-mottak-api-test.azurewebsites.net/swagger/index.html)
+[https://app-mottak-api-et.azurewebsites.net/swagger/index.html](https://app-mottak-api-et.azurewebsites.net/swagger/index.html)
 
 Portalen viser endepunkter for API-et.
 
@@ -284,7 +284,7 @@ Lag et nytt DPoP-bevis for innsending til API-tjenesten
 {
   "jti": "5629c0cf-ef59-4058-b831-fbb573aad334",
   "htm": "POST",
-  "htu": "https://app-mottak-test.azurewebsites.net/message",
+  "htu": "https://app-mottak-api-et.azurewebsites.net/message",
   "iat": 1715426416,
   "msg_type": "HST_Konsultasjon",
   "msg_version": "1",
@@ -385,7 +385,7 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 Ulike miljøer og variabler pr miljø.
 
 #### API Endepunkter
-
+- ET (Eksternt Testmiljø): https://app-mottak-api-et.azurewebsites.net/ (Azure) ([Link til Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html))
 - QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.qa.fihr.no/swagger/index.html))
 
 <div style="page-break-after: always"></div>
