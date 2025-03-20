@@ -13,7 +13,7 @@ public class PublicKeyInfo
     /// This value is used to reference the public key in the DPoP proof.
     /// </summary>
     [JsonPropertyName("id")]
-    public Guid Id { get; set; }
+    public string Id { get; set; } = null!;
 
     /// <summary>
     /// The expiration date of the public key.

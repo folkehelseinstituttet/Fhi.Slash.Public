@@ -147,7 +147,7 @@ Eksempel på respons fra API:
 ```
 [
     {
-        "id": "47c24d37-6511-40a2-ab19-d2386d102900",
+        "id": "AC39844BF1257C29C82A7845F9C0F3C936183104",
         "expirationDate": "9999-12-31T23:59:59.999",
         "publicKey": "-----BEGIN PUBLIC KEY-----\r\nMIIBojANBgkqhkiG9w0BAQEFAA ... -----END PUBLIC KEY-----"
     }
@@ -290,7 +290,7 @@ Lag et nytt DPoP-bevis for innsending til API-tjenesten
   "msg_version": "1",
   "msg_hash": "XqOR1SZn1IchuHWWbWQ6rI1MWm4Bo0cmISenZZZLU1s",
   "enc_sym_key": "PTimgMeCZlKHik2kpkqrHa/RLoGwN7RDGm5Iee7VBKEygWxuzSNfQOUg7ybUHfjiVsv0uEEgiMtcXQeCZFlZfJtsad7ut9gZhHp699aPqR5J+Px5lgZJyyW1PPyE1uooyWcHMszxZV35WioRKDD0+cdUzZ0h6a8fiyJPxVhrcm/nhCHFBvkitbWaL2Ye0yiTc8t/H45RTjcZ9AOvW7awG8rtNPpOFF7nLZQ2BknliKvInLxRwCOBmBc2jfkaj2LiEW9+2gPzVEOTyRx6bKcRSXwLi7EUtwNT7NoqCs5RG2aG6eunZjg16i6HfZx8M4hg6I73yG9UI5oKcpRDEfFc9IsrDTBMnBGy0Cvjn6d0o8NqkRFNfsqbXWrVqhKKx9C62qTFRKvVbEXlzReUVK4YWMl/TOMQre6rBOjNqfOkoUEv51R8hpMNDbTJIxY0O55e3wtLIGRYNt4x0FzV3cmL2Dr314c2NNhI5zmR++Iy3+/r5lZWH0UkiYO+sORASw1U",
-  "enc_key_id": "47c24d37-6511-40a2-ab19-d2386d102900",
+  "enc_key_id": "AC39844BF1257C29C82A7845F9C0F3C936183104",
   "ath": "_j4ZpplB6TBA-7EeIoHOnwqJf9XgItc1CXSti12ZD28"
 }
 .

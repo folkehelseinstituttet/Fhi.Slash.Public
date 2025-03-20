@@ -178,7 +178,7 @@ public class SlashMessengerTests
                     {
                         new()
                         {
-                            Id = Guid.NewGuid(),
+                            Id = "TESTKEY",
                             PublicKey = _testKeys.Value<string>("publicKey")!,
                             ExpirationDate = DateTime.Now.AddDays(1)
                         }
