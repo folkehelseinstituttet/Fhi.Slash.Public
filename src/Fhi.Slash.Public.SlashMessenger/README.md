@@ -11,14 +11,14 @@
     <img src="../../docs/images/fhi-logo.svg" alt="FHI Logo" width="100" style=""/>
 </p>
 
-# SLASH Messenger (Nuget)
+# SLASH Messenger (NuGet-pakke)
 
 Dette dokumentet beskriver strukturen og oppbygningen av prosjektet `Fhi.Slash.Public.SlashMessenger`.
 Koden er skrevet i .NET 8 (C#) og er tilgjengelig som en NuGet-pakke (`Fhi.Slash.Public.SlashMessenger`) på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
 
 
 ## Innhold
-- [SLASH Messenger (NuGet)](#slash-messenger-nuget)
+- [SLASH Messenger (NuGet-pakke)](#slash-messenger-nuget-pakke)
   - [Innhold](#innhold)
   - [Struktur](#struktur)
       - [Mappestruktur](#mappestruktur)

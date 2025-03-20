@@ -21,26 +21,39 @@ Se [Eksempelkode](#eksempelkode) for mer informasjon.
 
 ## Innhold
 
-- [Om tjenesten](#om-tjenesten)
-- [Overordnet flyt](#overordnet-flyt)
-- [Autentisering](#autentisering)
-- [API metoder](#api-metoder)
-- [Overføring av helsedata](#overføring-av-helsedata)
-- [Miljøer](#miljøer)
-- [Eksempelkode](#eksempelkode)
-- [Referanser](#referanser)
+- [SLASH - API Mottak](#slash---api-mottak)
+  - [Innhold](#innhold)
+  - [Om tjenesten](#om-tjenesten)
+    - [Krav](#krav)
+  - [Overordnet flyt](#overordnet-flyt)
+      - [Forklaring](#forklaring)
+  - [NuGet-pakke og Slash Messenger](#nuget-pakke-og-slash-messenger)
+  - [Eksempelkode og Slash Messenger CLI](#eksempelkode-og-slash-messenger-cli)
+  - [Autentisering](#autentisering)
+  - [API og Swagger](#api-og-swagger)
+  - [Overføring av helsedata](#overføring-av-helsedata)
+      - [1) Forbered meldingsinnhold og header-verdier](#1-forbered-meldingsinnhold-og-header-verdier)
+        - [Header-verdier](#header-verdier)
+      - [2) Hent public key og hash \& kryptere innhold](#2-hent-public-key-og-hash--kryptere-innhold)
+      - [3) Hent Access Token fra HelseID](#3-hent-access-token-fra-helseid)
+      - [3.1) Korrespondanse med HelseID](#31-korrespondanse-med-helseid)
+      - [4) Send melding til API-tjenesten](#4-send-melding-til-api-tjenesten)
+      - [5 a) Innlevering godkjent](#5-a-innlevering-godkjent)
+      - [5 b) Innlevering feilet](#5-b-innlevering-feilet)
+  - [Miljøer og API](#miljøer-og-api)
+  - [Referanser](#referanser)
 
 <div style="page-break-after: always"></div>
 
 ## Om tjenesten
 
-Tjenesten er et REST-basert API designet for sikker overføring av helsedata. API-et tilbyr en moderne og effektiv løsning for avlevering av meldinger via HTTP, som et alternativ til tradisjonelle EDI-baserte løsninger.
+Tjenesten er et REST-basert API designet for sikker overføring av helsedata. API-et tilbyr en moderne og effektiv løsning for å avlevere meldinger via HTTP i stedet for tradisjonelle EDI-baserte løsninger.
 
-Meldinger sendes i JSON-format og må krypteres, signeres, og autentiseres ved bruk av HelseID. Ved mottak validerer tjenesten autentisering, signatur, header-verdier og meldingsstruktur i en sekvensiell prosess. Dette sikrer at avsender umiddelbart får tilbakemelding om hvorvidt meldingen er teknisk godkjent og korrekt mottatt.
+Meldinger sendes i JSON-format og må krypteres, signeres, og autentiseres ved bruk av HelseID. Ved mottak validerer tjenesten autentisering, signatur, header-verdier og meldingsstruktur i en sekvensiell prosess. Dette sikrer at avsenderen umiddelbart får tilbakemelding på om meldingen er teknisk godkjent og riktig mottatt.
 
 ### Krav
 
-Tjenesten benytter HelseID til autentisering. Det stilles derfor krav til at en hver innsender har en oppføring i HelseID for den lokasjonen som skal sende inn data gjennom denne tjenesten. (HelseID-klienten bør utstedes på bedriftsnummeret til den faktiske lokasjonen)
+Tjenesten benytter HelseID til autentisering. Det stilles derfor krav til at enhver innsender har en oppføring i HelseID for den lokasjonen som skal sende inn data gjennom denne tjenesten. (HelseID-klienten bør være utstedt til bedriftsnummeret for den faktiske lokasjonen)
 
 I tillegg til dette kan det være nødvendig å opprette nettverksåpninger mot API-tjenesten til FHI på NHN og helsenettet.
 
@@ -60,7 +73,7 @@ _Overordnet skisse på hvordan helsedata skal overføres med API-tjenesten_
 3. Gjør klar meldingen for innsending
    1. Lag en hash av meldingen
    2. Symmetrisk kryptering av meldingen
-   3. Asymmetriske kryptering av nøkkelen med "Public Key" fra API-tjenesten
+   3. Asymmetrisk kryptering av nøkkelen med "Public Key" fra API-tjenesten
 4. Access Token
    1. Lag et DPoP-bevis og gjør første forespørsel til HelseID for å få et Access Token
    2. Respons fra HelseID vil inneholde en "nonce"-verdi som skal brukes i neste steg
@@ -77,12 +90,24 @@ _Overordnet skisse på hvordan helsedata skal overføres med API-tjenesten_
       - Se avsnittet [Avlevering av meldinger](#avlevering-av-meldinger)
 7. (API-tjenesten) Validering av Access Token og DPoP-bevis
 8. (API-tjenesten) Dekryptering og innholdsvalidering
-   1. Validere header-verdier
+   1. Validering av header-verdier
    2. Dekryptere meldingen og sjekke hash fra DPoP-beviset
    3. Validere meldingen mot meldingsskjema
 9. (API-tjenesten) Lagring melding og send respons
 
 Se [Referanser](#referanser) for mer informasjon om DPoP og HelseID.
+
+<div style="page-break-after: always"></div>
+
+## NuGet-pakke og Slash Messenger
+For å forenkle integrasjonen med Slash Mottak API og effektivisere innsending av meldinger, er det utviklet en NuGet-pakke for bruk i .NET.
+Kode for NuGet-pakken, samt dokumentasjon finner du her: [Slash Messenger](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/tree/public-github/src/Fhi.Slash.Public.SlashMessenger)
+
+NuGet-pakke for **Slash Messenger** finner du her: [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger)
+
+## Eksempelkode og Slash Messenger CLI
+Det finnes en testklient med kode for innsending av meldinger til API-tjenesten.
+Du finner koden og dokumentasjon for testklienten her: [SlashMessengerCLI](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/tree/public-github/src/Fhi.Slash.Public.SlashMessengerCLI)
 
 <div style="page-break-after: always"></div>
 
@@ -94,21 +119,17 @@ Dette realiseres ved hjelp av OpenID Connect(OIDC). Alle forespørsler til API-e
 For HelseID så kan en enten benytte klientkonfig fra rapporterende enhet direkte eller benytte klientkonfig fra EPJ (multi-tenant) for å få utstedt token (JWT) med nødvendige claims/påstander. Hvis en benytter multi-tenant så må EPJ sitt orgnummer settes som claim "helseid://claims/client/claims/orgnr_supplier", mens rapporterende enhet settes som "helseid://claims/client/claims/orgnr_parent".
 Utstedt token skal deretter benyttes i forespørsler mot API-et.
 
-Les mer om HelseID og teknisk dokumentasjon her:
+Les mer om HelseID og den tekniske dokumentasjonen her:
 [https://www.nhn.no/helseid/](https://www.nhn.no/helseid/)
 
 <div style="page-break-after: always"></div>
 
-## API metoder
-
-#### Swagger
+## API og Swagger
 
 API-tjenesten benytter Swagger for å dokumentere samtlige meldingstyper og versjoner.
-Du finner Swagger-portalen ved å trykke på linken nedenfor:
+Du finner Swagger-portalen her: [Swagger (ET - Eksternt Testmiljø)](https://app-mottak-api-et.azurewebsites.net/swagger/index.html)
 
-[https://app-mottak-api-et.azurewebsites.net/swagger/index.html](https://app-mottak-api-et.azurewebsites.net/swagger/index.html)
-
-Portalen viser endepunkter for API-et.
+Portalen viser endepunkter for API-et, samt meldingsstruktur og -skjema for de ulike meldingene mottaket har støtte for.
 
 <div style="page-break-after: always"></div>
 
@@ -116,12 +137,12 @@ Portalen viser endepunkter for API-et.
 
 Detaljert dokumentasjon på hvordan en skal overføre helsedata til API-tjenesten.
 
-#### 1) Forbred meldingsinnhold og headerverdier
+#### 1) Forbered meldingsinnhold og header-verdier
 
 Meldinger skal sendes som JSON-format i HTTP-forspørsel (POST).
 Sørg derfor for å strukturere meldingen i henhold til meldingsskjemaet for ønsket meldingstype.
 
-##### Headerverdier
+##### Header-verdier
 
 Følgende HTTP Header-verdier må legges til i forespørselen:
 
@@ -312,7 +333,7 @@ Bemerkninger:
 - `enc_key_id` i payload skal være ID-en til offentlig nøkkel som ble brukt til å kryptere symmetrisk nøkkel
 - `ath` i payload er hash av Access Token som blir brukt i forespørselen
 
-Legg også til nødvendinge header-verdier som beskrevet i avsnittet [Forbred meldingsinnhold og headerverdier](#1-forbred-meldingsinnhold-og-headerverdier):
+Legg også til nødvendinge header-verdier som beskrevet i avsnittet [Forbered meldingsinnhold og header-verdier](#1-forbered-meldingsinnhold-og-header-verdier):
 
 ```
 x-vendor-name: Softwarebedrift AS
@@ -380,19 +401,10 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 
 <div style="page-break-after: always"></div>
 
-## Miljøer
+## Miljøer og API
 
-Ulike miljøer og variabler pr miljø.
-
-#### API Endepunkter
 - ET (Eksternt Testmiljø): https://app-mottak-api-et.azurewebsites.net/ (Azure) ([Link til Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html))
 - QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.qa.fihr.no/swagger/index.html))
-
-<div style="page-break-after: always"></div>
-
-## Eksempelkode
-Det finnes kode for en testklient som håndterer innsending av meldinger mot API-tjenesten. 
-Du finner koden for testklienten SlashMessengerCLI [her](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/tree/public-github/src/Fhi.Slash.Public.SlashMessengerCLI).
 
 <div style="page-break-after: always"></div>
 
