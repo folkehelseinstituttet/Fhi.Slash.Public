@@ -27,6 +27,7 @@ public class DefaultHelseIdClient : IHelseIdClient
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DefaultHelseIdClient> _logger;
     private readonly JsonWebKey _helseIdJwk;
+    private readonly string _audience;
 
     /// <summary>
     /// Constructor for <see cref="DefaultHelseIdClient"/>.
@@ -47,6 +48,7 @@ public class DefaultHelseIdClient : IHelseIdClient
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _helseIdJwk = helseIdJwk;
+        _audience = new Uri(_helseIdConfig.TokenEndpoint).GetLeftPart(UriPartial.Authority);
     }
 
     /// <summary>
@@ -127,14 +129,19 @@ public class DefaultHelseIdClient : IHelseIdClient
             new(JwtClaimTypes.IssuedAt, DateTimeOffset.Now.ToUnixTimeSeconds().ToString()),
             new(JwtClaimTypes.JwtId, Guid.NewGuid().ToString("N"))
         };
+        
+        var signingCredentials = new SigningCredentials(_helseIdJwk, SecurityAlgorithms.RsaSha256);
 
-        var token = new JwtSecurityToken(
+        var header = new JwtHeader(signingCredentials, null, "client-authentication+jwt");
+
+        var payload = new JwtPayload(
             _helseIdConfig.ClientId.ToString(),
-            _helseIdConfig.TokenEndpoint,
+            _audience,
             claims,
             DateTime.UtcNow,
-            DateTime.UtcNow.AddSeconds(60),
-            new SigningCredentials(_helseIdJwk, SecurityAlgorithms.RsaSha256));
+            DateTime.UtcNow.AddSeconds(60));
+        
+        var token = new JwtSecurityToken(header, payload);
 
         return new ClientAssertion
         {

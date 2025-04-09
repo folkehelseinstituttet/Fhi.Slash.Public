@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
@@ -48,11 +47,11 @@ public class SlashMessengerTests
         var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _dPoPProofJwk);
 
         // Act
-        var act = async () => await slashService.PrepareAndSendMessage("NOT_A_VALID_JSON", "test", "test");
+        var exception = await Assert.ThrowsExactlyAsync<SlashServiceException>(async () =>
+            await slashService.PrepareAndSendMessage("NOT_A_VALID_JSON", "test", "test"));
 
         // Assert
-        await act.Should().ThrowAsync<SlashServiceException>()
-            .WithMessage("Input validation failed");
+        Assert.AreEqual("Input validation failed", exception.Message);
     }
 
     [TestMethod]
@@ -62,11 +61,11 @@ public class SlashMessengerTests
         var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _dPoPProofJwk);
 
         // Act
-        var act = async () => await slashService.PrepareAndSendMessage("{\"error\": \"SHOULD_NOT_BE_JSON_OBJECT\"}", "test", "test");
+        var exception = await Assert.ThrowsExactlyAsync<SlashServiceException>(async () =>
+            await slashService.PrepareAndSendMessage("{\"error\": \"SHOULD_NOT_BE_JSON_OBJECT\"}", "test", "test"));
 
         // Assert
-        await act.Should().ThrowAsync<SlashServiceException>()
-            .WithMessage("Input validation failed");
+        Assert.AreEqual("Input validation failed", exception.Message);
     }
 
     [TestMethod]
@@ -134,7 +133,7 @@ public class SlashMessengerTests
         var response = await slashService.PrepareAndSendMessage(_testMessage, "HST_Avtale", "1");
 
         // Assert
-        response.ProcessMessageResponse.Delivered.Should().BeTrue();
+        Assert.IsTrue(response.ProcessMessageResponse.Delivered);
     }
 
     private IMemoryCache SetupMemoryCacheMock()

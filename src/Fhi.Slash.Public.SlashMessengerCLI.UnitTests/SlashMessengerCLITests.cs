@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Fhi.Slash.Public.SlashMessenger.Slash.Interfaces;
@@ -73,7 +72,7 @@ public class SlashMessengerCLITests
         var msgVersion = "testVersion";
         var filename = "testfile.txt";
         var fileContent = "Test message content";
-        File.WriteAllText(filename, fileContent); // Create a temporary file message file
+        File.WriteAllText(filename, fileContent);
 
         // Act
         await Program.Execute(testHost, filename, msgType, msgVersion);
@@ -91,12 +90,11 @@ public class SlashMessengerCLITests
         // Arrange
         defaultConfig.HelseIdCertificateThumbprint = "non-existent-thumbprint";
 
-        // Act
-        var act = () => Program.GetCertificateByHelseIdConfig(defaultConfig);
+        // Act & Assert
+        var exception = Assert.ThrowsExactly<KeyNotFoundException>(() =>
+            Program.GetCertificateByHelseIdConfig(defaultConfig));
 
-        // Assert
-        act.Should().Throw<KeyNotFoundException>()
-            .WithMessage("No valid certfication was found for: onlyValid=False and FindByThumbprint=non-existent-thumbprint");
+        Assert.AreEqual("No valid certfication was found for: onlyValid=False and FindByThumbprint=non-existent-thumbprint", exception.Message);
     }
 
     [TestMethod]
@@ -110,8 +108,8 @@ public class SlashMessengerCLITests
         var cert = Program.GetCertificateByHelseIdConfig(defaultConfig);
 
         // Assert
-        cert.Should().NotBeNull();
-        cert!.Subject.Should().Contain("Just-For-Testing");
+        Assert.IsNotNull(cert);
+        Assert.IsTrue(cert!.Subject.Contains("Just-For-Testing"));
     }
 
     [TestMethod]
@@ -125,8 +123,8 @@ public class SlashMessengerCLITests
         var cert = Program.GetCertificateByHelseIdConfig(defaultConfig);
 
         // Assert
-        cert.Should().NotBeNull();
-        cert!.Subject.Should().Contain("Just-For-Testing");
+        Assert.IsNotNull(cert);
+        Assert.IsTrue(cert!.Subject.Contains("Just-For-Testing"));
     }
 
     [TestMethod]
@@ -135,12 +133,11 @@ public class SlashMessengerCLITests
         // Arrange
         defaultConfig.HelseIdCertificatePath = "TestFiles/Certs/THIS_CERT_DOES_NOT_EXIST.pfx";
 
-        // Act
-        var act = () => Program.GetCertificateByHelseIdConfig(defaultConfig);
+        // Act & Assert
+        var exception = Assert.ThrowsExactly<CryptographicException>(() =>
+            Program.GetCertificateByHelseIdConfig(defaultConfig));
 
-        // Assert
-        act.Should().Throw<CryptographicException>()
-            .WithMessage("The system cannot find the file specified.");
+        Assert.AreEqual("The system cannot find the file specified.", exception.Message);
     }
 
     [TestMethod]
@@ -150,11 +147,10 @@ public class SlashMessengerCLITests
         defaultConfig.HelseIdCertificatePath = certWithPasswordPath;
         defaultConfig.HelseIdCertificatePassword = "NOT_VALID_PASSWORD";
 
-        // Act
-        var act = () => Program.GetCertificateByHelseIdConfig(defaultConfig);
+        // Act & Assert
+        var exception = Assert.ThrowsExactly<CryptographicException>(() =>
+            Program.GetCertificateByHelseIdConfig(defaultConfig));
 
-        // Assert
-        act.Should().Throw<CryptographicException>()
-            .WithMessage("The specified network password is not correct.");
+        Assert.AreEqual("The specified network password is not correct.", exception.Message);
     }
 }

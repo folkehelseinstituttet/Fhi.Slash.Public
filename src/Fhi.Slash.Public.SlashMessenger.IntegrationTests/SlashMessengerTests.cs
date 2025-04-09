@@ -1,4 +1,3 @@
-using FluentAssertions;
 using IdentityModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -61,7 +60,7 @@ public sealed class SlashMessengerTests
 
         // Assert
         var slashResponse = GetResponseLog(_mockServer, SlashMessageEndpoint);
-        slashResponse!.StatusCode.Should().Be(200);
+        Assert.AreEqual(200, slashResponse!.StatusCode);
     }
 
     [TestMethod]
@@ -77,7 +76,7 @@ public sealed class SlashMessengerTests
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint);
         var accessToken = slashRequest!.Headers!["Authorization"].First();
-        accessToken.Should().StartWith("DPoP");
+        Assert.IsTrue(accessToken.StartsWith("DPoP"));
     }
 
     [TestMethod]
@@ -97,11 +96,11 @@ public sealed class SlashMessengerTests
         var (_, rawDPoPProofPayload, _) = SplitJwt(dPoPProof);
         var dPoPPayload = JsonDocument.Parse(Base64UrlDecode(rawDPoPProofPayload)).RootElement;
 
-        dPoPPayload.GetProperty("msg_type").GetString().Should().Be(ClientTestMessage1Type);
-        dPoPPayload.GetProperty("msg_version").GetString().Should().Be(ClientTestMessage1Version);
-        dPoPPayload.GetProperty("enc_key_id").GetString().Should().Be(SlashKeyPairId.ToString());
-        dPoPPayload.GetProperty("msg_hash").Should().NotBeNull();
-        dPoPPayload.GetProperty("enc_sym_key").Should().NotBeNull();
+        Assert.AreEqual(ClientTestMessage1Type, dPoPPayload.GetProperty("msg_type").GetString());
+        Assert.AreEqual(ClientTestMessage1Version, dPoPPayload.GetProperty("msg_version").GetString());
+        Assert.AreEqual(SlashKeyPairId.ToString(), dPoPPayload.GetProperty("enc_key_id").GetString());
+        Assert.IsNotNull(dPoPPayload.GetProperty("msg_hash"));
+        Assert.IsNotNull(dPoPPayload.GetProperty("enc_sym_key"));
     }
 
     [TestMethod]
@@ -131,8 +130,8 @@ public sealed class SlashMessengerTests
         var msg = Encoding.UTF8.GetString(msgBytes);
         var msgHash = Base64Url.Encode(SHA256.HashData(Encoding.UTF8.GetBytes(msg)));
 
-        msgHash.Should().Be(dPoPMsgHash);
-        msg.Should().Be(File.ReadAllText(ClientTestMessage1FilePath));
+        Assert.AreEqual(dPoPMsgHash, msgHash);
+        Assert.AreEqual(File.ReadAllText(ClientTestMessage1FilePath), msg);
     }
 
     [TestMethod]
@@ -147,11 +146,12 @@ public sealed class SlashMessengerTests
 
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint)!;
-        slashRequest.Headers.Should().Contain(h => h.Key.Equals("x-vendor-name"));
-        slashRequest.Headers.Should().Contain(h => h.Key.Equals("x-software-name"));
-        slashRequest.Headers.Should().Contain(h => h.Key.Equals("x-software-version"));
-        slashRequest.Headers.Should().Contain(h => h.Key.Equals("x-export-software-version"));
-        slashRequest.Headers.Should().Contain(h => h.Key.Equals("x-data-extraction-date"));
+        Assert.IsNotNull(slashRequest.Headers);
+        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-vendor-name")));
+        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-software-name")));
+        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-software-version")));
+        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-export-software-version")));
+        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-data-extraction-date")));
     }
 
     [TestMethod]
@@ -196,9 +196,9 @@ public sealed class SlashMessengerTests
         var helseIdRequest = GetRequestLog(_mockServer, HelseIdTokenEndpoint);
         var parameters = ParseQueryParameters(helseIdRequest!.Body!);
 
-        parameters["grant_type"].Should().Be("client_credentials");
-        parameters["client_id"].Should().Be("just-a-test-client");
-        parameters["client_assertion_type"].Should().Be("urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+        Assert.AreEqual("client_credentials", parameters["grant_type"]);
+        Assert.AreEqual("just-a-test-client", parameters["client_id"]);
+        Assert.AreEqual("urn:ietf:params:oauth:client-assertion-type:jwt-bearer", parameters["client_assertion_type"]);
 
         var (accessTokenHeader, accessTokenPayload, accessTokenSignature) = SplitJwt(parameters["client_assertion"]!);
         AssertJwtSignature(LoadCertificate(ClientCert1FilePath), accessTokenHeader, accessTokenPayload, accessTokenSignature, shouldBeValid: true);
@@ -248,7 +248,9 @@ public sealed class SlashMessengerTests
 
         // Assert
         var getKeysRequest = GetRequestLog(_mockServer, SlashKeysEndpoint);
-        getKeysRequest?.Headers.Should().Contain(h => h.Key.Equals(testHeader));
+        Assert.IsNotNull(getKeysRequest);
+        Assert.IsNotNull(getKeysRequest.Headers);
+        Assert.IsTrue(getKeysRequest.Headers.Any(h => h.Key.Equals(testHeader)));
     }
 
     private void SetupMockServer()
@@ -357,7 +359,7 @@ public sealed class SlashMessengerTests
     private static (string Header, string Payload, string Signature) SplitJwt(string jwt)
     {
         var parts = jwt.Split('.');
-        parts.Length.Should().Be(3);
+        Assert.AreEqual(3, parts.Length);
         return (parts[0], parts[1], parts[2]);
     }
 
@@ -380,21 +382,21 @@ public sealed class SlashMessengerTests
             HashAlgorithmName.SHA256,
             RSASignaturePadding.Pkcs1);
 
-        isValid.Should().Be(shouldBeValid);
+        Assert.AreEqual(shouldBeValid, isValid);
     }
 
     private static void AssertJwtHeader(string encodedHeader, string expectedType, string expectedAlgorithm)
     {
         var header = JsonDocument.Parse(Base64UrlDecode(encodedHeader)).RootElement;
-        header.GetProperty("typ").GetString().Should().Be(expectedType);
-        header.GetProperty("alg").GetString().Should().Be(expectedAlgorithm);
+        Assert.AreEqual(expectedType, header.GetProperty("typ").GetString());
+        Assert.AreEqual(expectedAlgorithm, header.GetProperty("alg").GetString());
     }
 
     private static void AssertJwtPayload(string encodedPayload, string expectedMethod, string expectedUri)
     {
         var payload = JsonDocument.Parse(Base64UrlDecode(encodedPayload)).RootElement;
-        payload.GetProperty("htm").GetString().Should().Be(expectedMethod);
-        payload.GetProperty("htu").GetString().Should().EndWith(expectedUri);
+        Assert.AreEqual(expectedMethod, payload.GetProperty("htm").GetString());
+        Assert.IsTrue(payload.GetProperty("htu").GetString()?.EndsWith(expectedUri));
     }
 
     public static JsonWebKey ConvertPemToPrivateJwk(string pem)
