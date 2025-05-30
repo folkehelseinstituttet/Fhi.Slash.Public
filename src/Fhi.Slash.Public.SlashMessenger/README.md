@@ -72,6 +72,11 @@ Les mer om HelseID og autentisering [her](https://github.com/folkehelseinstitutt
 - **Slash-konfigurasjon**
 Inkluderer endepunkt for innsending av meldinger og informasjon om EPJ-systemet som sender meldingene.
 
+#### Maksimal størrelse på innsending
+
+For å sikre stabil og effektiv håndtering av høy trafikk, bør hver http request som sendes inn være maksimalt 2 MB.
+Vær oppmerksom på at dette ikke håndteres automatisk av denne pakken, så dere må selv implementere denne begrensningen i deres system.
+
 ## Logging
 Standardimplementasjonen av services og clients inkluderer logging med to ulike nivåer:
  - **Trace:** Logger **start** og **slutt** for metodekall.
