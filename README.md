@@ -405,6 +405,7 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 
 - ET (Eksternt Testmiljø): https://app-mottak-api-et.azurewebsites.net/ (Azure) ([Link til Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html))
 - QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.qa.fihr.no/swagger/index.html))
+- Prod: https://apimottak01.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.fihr.no/swagger/index.html))
 
 <div style="page-break-after: always"></div>
 
