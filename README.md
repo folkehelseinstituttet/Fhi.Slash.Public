@@ -401,6 +401,39 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 
 <div style="page-break-after: always"></div>
 
+## Feilhåndtering, rekkefølge og køing av meldinger
+
+For å sikre korrekt overføring av data må innsendinger skje sekvensielt og ha støtte for re-sending ved eventuelle feil/nettverksbrudd o.l.
+
+**Rekkefølge og kø**
+
+Innsending av meldinger skal skje i samme rekkefølge som dataene oppstod hos avsender.
+- Integrasjonen bør implementere en kømekanisme for sending av meldinger (first in - first out).
+- Dersom en melding feiler, må den bli liggende i køen til den er bekreftet levert (HTTP 200/201).
+- Nye meldinger fra samme enhet skal ikke sendes før tidligere meldinger er bekreftet levert.
+
+**Avvisning av meldinger (HTTP 4xx)**
+
+En HTTP 4xx-feil betyr at innholdet eller strukturen i meldingen er feil, eller at innsendingen ikke kan aksepteres slik den er. I slike tilfeller skal innsending stoppes inntil feilen er rettet.
+
+Det er viktig å merke seg at det ikke er tillatt å hoppe over en melding. Det skal aldri sendes inn meldinger med datoer/innhold som ligger senere enn den siste meldingen som ble godkjent levert. Hele serien må være komplett og uten hull.
+
+Ved autentiseringsfeil og lignende (f.eks. 401/403) må avsender rette den tekniske årsaken (token, sertifikat e.l.) og forsøke samme innsending på nytt. Innholdet i meldingen trenger normalt ikke endres ved slike feil.
+
+Er det feil på innhold eller struktur så bør en gjøre følgende:
+- Loggføre feilen (HTTP-statuskode, feilmelding og X-Correlation-ID).
+- Korrigere årsaken til feilen (teknisk feil, mapping, struktur, schema-validering osv.).
+- Generere melding/meldinger på nytt fra siste godkjente periode.
+- Sende korrigerte melding/meldinger på nytt.
+- Når melding/meldinger er bekreftet levert (HTTP 200/201), kan innsending av senere meldinger fortsette.
+
+
+**Tekniske feil (HTTP 5xx eller nettverksfeil)**
+
+Ved midlertidige tekniske feil eller nettverksfeil bør systemet ha støtte for å forsøke å sende meldingen på nytt etter en viss tid. Det bør samtidig settes et maksimalt antall forsøk, og systemet bør varsle dersom feilen vedvarer. Meldingen skal først anses som levert når API-et returnerer HTTP 200/201.
+
+<div style="page-break-after: always"></div>
+
 ## Miljøer og API
 
 - ET (Eksternt Testmiljø): https://app-mottak-api-et.azurewebsites.net/ (Azure) ([Link til Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html))
