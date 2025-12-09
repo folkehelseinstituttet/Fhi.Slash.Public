@@ -141,6 +141,7 @@ Detaljert dokumentasjon på hvordan en skal overføre helsedata til API-tjeneste
 
 Meldinger skal sendes som JSON-format i HTTP-forspørsel (POST).
 Sørg derfor for å strukturere meldingen i henhold til meldingsskjemaet for ønsket meldingstype.
+NB! Når en skal sende meldinger så må content-type være "text/plain" og ikke "application/json" (ettersom at innholdet er kryptert)
 
 ##### Header-verdier
 
@@ -398,12 +399,15 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 | 2006     | SchemaNotFound                                            | Fant ikke skjema som korresponderer med meldingstype og -versjon            |
 | 2007     | InvalidJsonMessage                                        | Dekryptert melding er ikke Json-format                                      |
 | 2008     | SchemaValidationFailed                                    | Dekryptert melding samsvarer ikke med meldingsskjema                        |
+| 2009     | PayloadSizeLimitExceeded                                  | Payload size exceeded limit                                                 |
+| 2010     | StorageError                                              | Failed to store the message                                                 |
 
 <div style="page-break-after: always"></div>
 
-## Feilhåndtering, rekkefølge og køing av meldinger
+## Feilhåndtering, maks størrelse, rekkefølge og køing av meldinger
 
 For å sikre korrekt overføring av data må innsendinger skje sekvensielt og ha støtte for re-sending ved eventuelle feil/nettverksbrudd o.l.
+
 
 **Rekkefølge og kø**
 
@@ -427,10 +431,31 @@ Er det feil på innhold eller struktur så bør en gjøre følgende:
 - Sende korrigerte melding/meldinger på nytt.
 - Når melding/meldinger er bekreftet levert (HTTP 200/201), kan innsending av senere meldinger fortsette.
 
+***Maks størrelse av melding***
+
+Meldinger med payload som overgår 15 megabyte i størrelse blir avvist med feilkode 2009.
 
 **Tekniske feil (HTTP 5xx eller nettverksfeil)**
 
 Ved midlertidige tekniske feil eller nettverksfeil bør systemet ha støtte for å forsøke å sende meldingen på nytt etter en viss tid. Det bør samtidig settes et maksimalt antall forsøk, og systemet bør varsle dersom feilen vedvarer. Meldingen skal først anses som levert når API-et returnerer HTTP 200/201.
+
+
+### Initial last / større innsendinger  
+
+Ved oppstart eller når man har en større mengde historiske data for innsending til API-tjenesten, anbefales følgende prosess:
+
+#### 1. Oppdeling i batcher  
+- For å unngå tekniske begrensninger anbefales det å dele opp data i mindre forsendelser. Se også maks størrelse ovenfor.  
+- En praktisk oppdeling er måned-for-måned eller annen hensiktsmessig logisk inndeling som holder seg godt under grensen.
+
+#### 2. Sekvens og kvittering  
+- Batchene må sendes i kronologisk rekkefølge (eldste data først). 
+- En må vente på **positiv kvittering (OK)** før en fortsetter neste batch.
+
+#### 3. Løpende innsending etter initial last  
+- Når initial last er gjennomført, kan leverandøren sende løpende meldinger som normal drift. Anbefalt er daglig innsending.
+- Rekkefølge og kvittering gjelder også her: Opprettelser/oppdateringer må sendes i riktig rekkefølge og vent gjerne på kvittering før neste innsending.
+
 
 <div style="page-break-after: always"></div>
 
