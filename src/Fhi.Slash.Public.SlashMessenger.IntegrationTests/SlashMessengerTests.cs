@@ -28,8 +28,8 @@ public sealed class SlashMessengerTests
     private const string ClientCert1FilePath = "TestFiles/Client/test_cert_without_password.pfx";
     private const string ClientCert2FilePath = "TestFiles/Client/test_cert_without_password_2.pfx";
     private const string ClientHelseIdClientDefinitionFilePath = "TestFiles/Client/helseid-client-definition.json";
-    private const string ClientTestMessage1FilePath = "TestFiles/Client/hst_avtale_test_message.json";
-    private const string ClientTestMessage1Type = "hst_avtale";
+    private const string ClientTestMessage1FilePath = "TestFiles/Client/empty_message.json";
+    private const string ClientTestMessage1Type = "HST_Konsultasjon";
     private const string ClientTestMessage1Version = "1";
 
     // Slash files & Endpoints

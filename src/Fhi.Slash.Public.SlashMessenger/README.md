@@ -98,6 +98,9 @@ For å endre loggnivå for pakken, kan du bruke `appsettings.json`.
 ## Tester
 Prosjektet inneholder både unit-tester og integrasjonstester, med eksempler som viser hvordan de ulike filene er strukturert.
 
+Om en trenger testfiler så kan dette lastes ned fra vårt test miljø.
+Se instruksjoner her: https://github.com/folkehelseinstituttet/Fhi.Slash.Public?tab=readme-ov-file#testfiler
+
 #### Struktur for integrasjonstester
 I mappen `TestFiles` finner du tre undermapper:
  - **Client:** Data for innsendingsprogrammet.

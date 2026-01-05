@@ -21,7 +21,7 @@ namespace Fhi.Slash.Public.SlashMessenger.UnitTests;
 public class SlashMessengerTests
 {
     private readonly string _accessToken = File.ReadAllText("TestFiles/access-token.txt");
-    private readonly string _testMessage = File.ReadAllText("TestFiles/hst_avtale_test_message.json");
+    private readonly string _testMessage = File.ReadAllText("TestFiles/empty_message.json");
     private readonly JObject _testKeys = JObject.Parse(File.ReadAllText("TestFiles/test_keys.json"))!;
     private readonly X509Certificate2 _certificate = new("TestFiles/Certs/test_cert_without_password.pfx", string.Empty, X509KeyStorageFlags.Exportable);
     private readonly JsonWebKey _dPoPProofJwk = new(File.ReadAllText("TestFiles/private_jwk.json"));
@@ -95,8 +95,8 @@ public class SlashMessengerTests
         var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
 
         // Act
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Avtale", "1");
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Avtale", "1");
+        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
+        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
 
         // Assert
         memoryCache.Received(3).TryGetValue(Arg.Any<object>(), out Arg.Any<object>()!);
@@ -130,7 +130,7 @@ public class SlashMessengerTests
         var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
 
         // Act
-        var response = await slashService.PrepareAndSendMessage(_testMessage, "HST_Avtale", "1");
+        var response = await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
 
         // Assert
         Assert.IsTrue(response.ProcessMessageResponse.Delivered);

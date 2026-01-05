@@ -12,7 +12,6 @@
   <ItemGroup>
     <None Remove="TestFiles\access-token.txt" />
     <None Remove="TestFiles\Certs\test_cert_without_password.pfx" />
-    <None Remove="TestFiles\hst_avtale_test_message.json" />
     <None Remove="TestFiles\private_jwk.json" />
     <None Remove="TestFiles\test_keys.json" />
   </ItemGroup>
@@ -24,7 +23,7 @@
     <Content Include="TestFiles\Certs\test_cert_without_password.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="TestFiles\hst_avtale_test_message.json">
+    <Content Include="TestFiles\empty_message.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\private_jwk.json">

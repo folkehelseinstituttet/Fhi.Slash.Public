@@ -18,12 +18,12 @@ public static class Program
     private static IHost? _host;
 
     // Input Arguments: "*PATH TO MESSAGE FILE*" "*MESSAGE TYPE*" "*MESSAGE VERSION*" ("*DATA EXTRACTION DATE*": optional)
-    // Example: "C:\my_message_file.json" "HST_Avtale" "1" "01.01.2024"
+    // Example: "C:\my_message_file.json" "HST_Konsultasjon" "1" "01.01.2024"
     public static async Task Main(string[] args)
     {
         if(args.Length < 3)
         {
-            throw new ArgumentException($"Missing arguments. Please provide *Path to message file*, *Message type*, *Message version*, (*Data extraction date*: Optional)\n Example: \"C:\\my_message_file.json\" \"HST_Avtale\" \"1\" \"01.01.2024\"");
+            throw new ArgumentException($"Missing arguments. Please provide *Path to message file*, *Message type*, *Message version*, (*Data extraction date*: Optional)\n Example: \"C:\\my_message_file.json\" \"HST_Konsultasjon\" \"1\" \"01.01.2024\"");
         }
 
         // Handle Arguments

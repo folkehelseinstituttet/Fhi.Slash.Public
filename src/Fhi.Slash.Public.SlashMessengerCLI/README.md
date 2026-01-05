@@ -47,19 +47,22 @@ Det er implementert logging av operasjoner som skjer i nuget. For å se detaljer
 
 HelseID anbefaler å hente `TokenEndpoint` fra `DiscoveryDocument` i stedet for å hardkode endepunktet. Derfor demonstrerer eksempelkoden hvordan token-endepunktet kan hentes dynamisk ved hjelp av dette dokumentet.
 
+Om en trenger testfiler så kan dette lastes ned fra vårt test miljø.
+Se instruksjoner her: https://github.com/folkehelseinstituttet/Fhi.Slash.Public?tab=readme-ov-file#testfiler
+
 For å klargjøre programmet må prosjektkoden lastes ned og bygges.
 Etter bygging får man filen `Fhi.Slash.Public.SlashMessengerCLI.exe`, som kan kjøres direkte.
 
 Input-argumenter:
 
 - Full filsti til meldingen som skal sendes (JSON-fil).
-- Meldingstype (f.eks. HST_Avtale).
+- Meldingstype (f.eks. 'HST_Konsultasjon').
 - Meldingsversjon (f.eks. 1).
 - Uttreksdato (f.eks. 01.01.2024). Denne verdien er valgfri; hvis den ikke settes, benyttes dagens dato.
 
 Eksempel:
 
-`> C:/folder1/Fhi.Slash.Public.SlashMessengerCLI.exe "C:/folder2/message.json" "HST_Avtale" "1" "01.01.2024"`
+`> C:/folder1/Fhi.Slash.Public.SlashMessengerCLI.exe "C:/folder2/message.json" "HST_Konsultasjon" "1" "01.01.2024"`
 
 ## Overordnet flyt
 

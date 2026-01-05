@@ -29,6 +29,7 @@ Se [Eksempelkode](#eksempelkode) for mer informasjon.
       - [Forklaring](#forklaring)
   - [NuGet-pakke og Slash Messenger](#nuget-pakke-og-slash-messenger)
   - [Eksempelkode og Slash Messenger CLI](#eksempelkode-og-slash-messenger-cli)
+  - [Testfiler](#testfiler)
   - [Autentisering](#autentisering)
   - [API og Swagger](#api-og-swagger)
   - [Overføring av helsedata](#overføring-av-helsedata)
@@ -108,6 +109,20 @@ NuGet-pakke for **Slash Messenger** finner du her: [nuget.org](https://www.nuget
 ## Eksempelkode og Slash Messenger CLI
 Det finnes en testklient med kode for innsending av meldinger til API-tjenesten.
 Du finner koden og dokumentasjon for testklienten her: [SlashMessengerCLI](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/tree/public-github/src/Fhi.Slash.Public.SlashMessengerCLI)
+
+
+## Testfiler
+
+Testfiler for de ulike meldingstypene kan lastes ned via swagger.
+1. Gå til swagger-siden, klikk på ønsket domene og så klikk på ønsket meldingstype i nedtrekkslisten oppe til høyre.
+2. Trykk så på "Last ned eksempel på melding (json)" for å laste ned eksempel.
+
+Swagger:
+https://app-mottak-api-et.azurewebsites.net/swagger/index.html
+
+Eksempel for HST_Konsultasjon:
+https://app-mottak-api-et.azurewebsites.net/swagger-tools/download-example?messageType=HST_Konsultasjon&messageVersion=1
+
 
 <div style="page-break-after: always"></div>
 
