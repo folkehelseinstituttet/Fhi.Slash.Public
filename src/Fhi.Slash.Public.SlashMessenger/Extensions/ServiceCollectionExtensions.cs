@@ -115,7 +115,7 @@ public static class ServiceCollectionExtensions
 
         var keyUsageExtension = certificate.Extensions
             .OfType<X509KeyUsageExtension>()
-            .FirstOrDefault(ext => ext.Oid?.FriendlyName == "Key Usage");
+            .FirstOrDefault();
 
         if (keyUsageExtension == null || !keyUsageExtension.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature))
         {

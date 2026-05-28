@@ -55,9 +55,10 @@ public class DefaultHelseIdClient : IHelseIdClient
     /// Gets an access token from HelseId.
     /// </summary>
     /// <param name="dPoPProofJwk">The <see cref="JsonWebKey"/> used when generating the DPoP proof.</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A <see cref="TokenResponse"/> with the Access Token</returns>
     /// <exception cref="HelseIdClientException">Thrown if the access token retrieval fails.</exception>
-    public virtual async Task<TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk)
+    public virtual async Task<TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk, string? parentOrganizationNumber = null)
     {
         _logger.LogDebug("Getting Access Token from HelseId");
 
@@ -65,7 +66,7 @@ public class DefaultHelseIdClient : IHelseIdClient
         ClientCredentialsTokenRequest clientCredentialsTokenRequest;
         try
         {
-            clientCredentialsTokenRequest = CreateClientCredentialsTokenRequestAsync(dPoPProofJwk, dPoPNonce: null);
+            clientCredentialsTokenRequest = CreateClientCredentialsTokenRequestAsync(dPoPProofJwk, dPoPNonce: null, parentOrganizationNumber);
         }
         catch (Exception ex)
         {
@@ -82,7 +83,7 @@ public class DefaultHelseIdClient : IHelseIdClient
             // If the token response requires a DPoP nonce, create a new request with the nonce from the previous response
             if (tokenResponse.IsError && tokenResponse.Error == "use_dpop_nonce" && !string.IsNullOrEmpty(tokenResponse.DPoPNonce))
             {
-                clientCredentialsTokenRequest = CreateClientCredentialsTokenRequestAsync(dPoPProofJwk, tokenResponse.DPoPNonce);
+                clientCredentialsTokenRequest = CreateClientCredentialsTokenRequestAsync(dPoPProofJwk, tokenResponse.DPoPNonce, parentOrganizationNumber);
                 tokenResponse = await httpClient.RequestClientCredentialsTokenAsync(clientCredentialsTokenRequest);
             }
 
@@ -105,11 +106,12 @@ public class DefaultHelseIdClient : IHelseIdClient
     /// </summary>
     /// <param name="dPoPProofJwk">The <see cref="JsonWebKey"/> used when generating DPoP proofs.</param>
     /// <param name="dPoPNonce">A nonce issued by HelseId</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A <see cref="ClientCredentialsTokenRequest"/> for requesting a new access token.</returns>
-    protected virtual ClientCredentialsTokenRequest CreateClientCredentialsTokenRequestAsync(JsonWebKey dPoPProofJwk, string? dPoPNonce) => new()
+    protected virtual ClientCredentialsTokenRequest CreateClientCredentialsTokenRequestAsync(JsonWebKey dPoPProofJwk, string? dPoPNonce, string? parentOrganizationNumber) => new()
     {
         Address = _helseIdConfig.TokenEndpoint,
-        ClientAssertion = BuildClientAssertion(),
+        ClientAssertion = BuildClientAssertion(parentOrganizationNumber),
         ClientId = _helseIdConfig.ClientId,
         GrantType = GrantTypes.ClientCredentials,
         ClientCredentialStyle = ClientCredentialStyle.PostBody,
@@ -120,9 +122,12 @@ public class DefaultHelseIdClient : IHelseIdClient
     /// Creates a client assertion for use in client credentials token requests to HelseID. 
     /// The client assertion is a JWT signed with the private key corresponding to the public key registered with HelseID.
     /// </summary>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A <see cref="ClientAssertion"/> to be used in a <see cref="ClientCredentialsTokenRequest"/>.</returns>
-    protected virtual ClientAssertion BuildClientAssertion()
+    protected virtual ClientAssertion BuildClientAssertion(string? parentOrganizationNumber = null)
     {
+        var normalizedParentOrganizationNumber = OrganizationNumberTools.NormalizeParentOrganizationNumber(parentOrganizationNumber);
+
         var claims = new List<Claim>
         {
             new(JwtClaimTypes.Subject, _helseIdConfig.ClientId.ToString()),
@@ -140,6 +145,11 @@ public class DefaultHelseIdClient : IHelseIdClient
             claims,
             DateTime.UtcNow,
             DateTime.UtcNow.AddSeconds(60));
+
+        if (!string.IsNullOrEmpty(normalizedParentOrganizationNumber))
+        {
+            payload["assertion_details"] = BuildAssertionDetails(normalizedParentOrganizationNumber);
+        }
         
         var token = new JwtSecurityToken(header, payload);
 
@@ -149,4 +159,24 @@ public class DefaultHelseIdClient : IHelseIdClient
             Value = new JwtSecurityTokenHandler().WriteToken(token)
         };
     }
+
+    private static List<Dictionary<string, object>> BuildAssertionDetails(string normalizedParentOrganizationNumber) =>
+    [
+        new()
+        {
+            ["type"] = "helseid_authorization",
+            ["practitioner_role"] = new Dictionary<string, object>
+            {
+                ["organization"] = new Dictionary<string, object>
+                {
+                    ["identifier"] = new Dictionary<string, object>
+                    {
+                        ["system"] = "urn:oid:1.0.6523",
+                        ["type"] = "ENH",
+                        ["value"] = OrganizationNumberTools.ToOrganizationIdentifier(normalizedParentOrganizationNumber)
+                    }
+                }
+            }
+        }
+    ];
 }

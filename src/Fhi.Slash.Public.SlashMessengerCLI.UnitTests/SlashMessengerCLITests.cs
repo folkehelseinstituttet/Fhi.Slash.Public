@@ -85,6 +85,47 @@ public class SlashMessengerCLITests
     }
 
     [TestMethod]
+    public async Task ShouldSendMessageWithParentOrganizationNumber()
+    {
+        // Arrange
+        var parentOrganizationNumber = "123456789";
+        var slashService = Substitute.For<ISlashService>();
+        slashService.PrepareAndSendMessage(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>())
+            .Returns(new SendMessageResponse()
+            {
+                CorrelationId = Guid.Empty,
+                ProcessMessageResponse = new ProcessMessageResponse()
+                {
+                    Delivered = true,
+                    Errors = []
+                },
+                ResposeMessage = new HttpResponseMessage()
+            });
+
+        var testHost = new HostBuilder()
+            .ConfigureServices((ctx, services) =>
+            {
+                services.AddTransient(_ => slashService);
+            })
+            .Build();
+
+        var msgType = "testType";
+        var msgVersion = "testVersion";
+        var filename = "testfile_multitenant.txt";
+        var fileContent = "Test message content";
+        File.WriteAllText(filename, fileContent);
+
+        // Act
+        await Program.Execute(testHost, filename, msgType, msgVersion, parentOrganizationNumber: parentOrganizationNumber);
+
+        // Assert
+        await slashService.Received(1).PrepareAndSendMessage(fileContent, msgType, msgVersion, parentOrganizationNumber);
+
+        // Cleanup
+        File.Delete(filename);
+    }
+
+    [TestMethod]
     public void ShouldTryToGetCertFromCertStoreIfThumbprintProvided()
     {
         // Arrange

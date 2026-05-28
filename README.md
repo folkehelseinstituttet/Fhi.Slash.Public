@@ -114,11 +114,10 @@ Du finner koden og dokumentasjon for testklienten her: [SlashMessengerCLI](https
 ## Testfiler
 
 Testfiler for de ulike meldingstypene kan lastes ned via swagger.
-1. Gå til swagger-siden, klikk på ønsket domene og så klikk på ønsket meldingstype i nedtrekkslisten oppe til høyre.
-2. Trykk så på "Last ned eksempel på melding (json)" for å laste ned eksempel.
-
-Swagger:
-https://app-mottak-api-et.azurewebsites.net/swagger/index.html
+1. Gå til [swagger-siden](https://app-mottak-api-et.azurewebsites.net/swagger/index.html)
+2. Klikk på ønsket domene.
+3. Klikk på ønsket meldingstype i nedtrekkslisten oppe til høyre.
+4. Trykk så på "Last ned eksempel på melding (json)" for å laste ned eksempel.
 
 Eksempel for HST_Konsultasjon:
 https://app-mottak-api-et.azurewebsites.net/swagger-tools/download-example?messageType=HST_Konsultasjon&messageVersion=1

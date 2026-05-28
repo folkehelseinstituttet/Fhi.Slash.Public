@@ -17,20 +17,22 @@ public static class Program
 {
     private static IHost? _host;
 
-    // Input Arguments: "*PATH TO MESSAGE FILE*" "*MESSAGE TYPE*" "*MESSAGE VERSION*" ("*DATA EXTRACTION DATE*": optional)
-    // Example: "C:\my_message_file.json" "HST_Konsultasjon" "1" "01.01.2024"
+    // Input Arguments: "*PATH TO MESSAGE FILE*" "*MESSAGE TYPE*" "*MESSAGE VERSION*" ("*DATA EXTRACTION DATE*": optional) ("*PARENT ORGANIZATION NUMBER*": optional)
+    // Example: "C:\my_message_file.json" "HST_Konsultasjon" "1" "01.01.2024" "123456789"
     public static async Task Main(string[] args)
     {
-        if(args.Length < 3)
+        if (args.Length < 3)
         {
-            throw new ArgumentException($"Missing arguments. Please provide *Path to message file*, *Message type*, *Message version*, (*Data extraction date*: Optional)\n Example: \"C:\\my_message_file.json\" \"HST_Konsultasjon\" \"1\" \"01.01.2024\"");
+            throw new ArgumentException(
+                $"Missing arguments. Please provide *Path to message file*, *Message type*, *Message version*, (*Data extraction date*: Optional), (*Parent organization number*: Optional)\n Example: \"C:\\my_message_file.json\" \"HST_Konsultasjon\" \"1\" \"01.01.2024\" \"123456789\"");
         }
 
         // Handle Arguments
         var messageFilePath = args[0];
         var messageType = args[1];
         var messageVersion = args[2];
-        DateTime? dataExtractionDate = args.Length >= 4 ? DateTime.Parse(args[3]) : DateTime.Now;
+        string? parentOrganizationNumber = args.Length >= 4 ? args[3] : null;
+        DateTime? dataExtractionDate = args.Length >= 5 ? DateTime.Parse(args[4]) : DateTime.Now;
 
         ArgumentException.ThrowIfNullOrWhiteSpace(messageFilePath);
         ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
@@ -40,24 +42,30 @@ public static class Program
         _host = await SetupHost(dataExtractionDate);
 
         // Execute
-        await Execute(_host, messageFilePath, messageType, messageVersion, dataExtractionDate);
+        await Execute(_host, messageFilePath, messageType, messageVersion, dataExtractionDate,
+            parentOrganizationNumber);
     }
 
-    public static async Task Execute(IHost host, string messageFilePath, string messageType, string messageVersion, DateTime? dataExtractionDate = null)
+    public static async Task Execute(IHost host, string messageFilePath, string messageType, string messageVersion,
+        DateTime? dataExtractionDate = null, string? parentOrganizationNumber = null)
     {
         // Print Info
         Console.WriteLine($"MessageFilePath: {messageFilePath}");
         Console.WriteLine($"MessageType: {messageType}");
         Console.WriteLine($"MessageVersion: {messageVersion}");
         Console.WriteLine($"DataExtractionDate: {dataExtractionDate?.ToString("dd.MM.yyyy") ?? "Today"}");
+        if (!string.IsNullOrWhiteSpace(parentOrganizationNumber))
+            Console.WriteLine($"ParentOrganizationNumber: {parentOrganizationNumber}");
 
         // Load Message File
         var messageFileContent = File.ReadAllText(messageFilePath) ??
-            throw new InvalidOperationException($"Could not load message file. File Path: {messageFilePath}");
+                                 throw new InvalidOperationException(
+                                     $"Could not load message file. File Path: {messageFilePath}");
 
         // Send Message
         var slashService = host.Services.GetRequiredService<ISlashService>();
-        var response = await slashService.PrepareAndSendMessage(messageFileContent, messageType, messageVersion);
+        var response = await slashService.PrepareAndSendMessage(messageFileContent, messageType, messageVersion,
+            parentOrganizationNumber);
 
         // Print Response
         Console.WriteLine("\nResponse:");
@@ -86,7 +94,8 @@ public static class Program
             .Build();
 
         // Get HelseId Discovery Document
-        var helseIdOpenIdConfigUrl = appsettingsConfig.GetValue<string>(nameof(AppsettingsConfig.HelseIdOpenIdConfigurationUrl));
+        var helseIdOpenIdConfigUrl =
+            appsettingsConfig.GetValue<string>(nameof(AppsettingsConfig.HelseIdOpenIdConfigurationUrl));
         using var httpClient = new HttpClient();
         var disco = await httpClient.GetDiscoveryDocumentAsync(helseIdOpenIdConfigUrl);
         if (string.IsNullOrWhiteSpace(disco?.TokenEndpoint))
@@ -95,19 +104,17 @@ public static class Program
         }
 
         return new HostBuilder()
-            .ConfigureAppConfiguration((ctx, config) =>
-            {
-                config.AddConfiguration(appsettingsConfig);
-            })
+            .ConfigureAppConfiguration((ctx, config) => { config.AddConfiguration(appsettingsConfig); })
             .ConfigureLogging(logging =>
             {
                 logging.ClearProviders(); // Clears default providers if you want to start fresh
-                logging.AddConsole();     // Adds console logging
+                logging.AddConsole(); // Adds console logging
             })
             .ConfigureServices((ctx, services) =>
             {
                 var config = ctx.Configuration.Get<AppsettingsConfig>() ??
-                    throw new InvalidOperationException("Could not get Appsettings configuration. Ensure that appsettings.json exists and is configured");
+                             throw new InvalidOperationException(
+                                 "Could not get Appsettings configuration. Ensure that appsettings.json exists and is configured");
 
                 services.AddSlash(slashConfig =>
                 {
@@ -121,21 +128,24 @@ public static class Program
                     helseIdConfig.TokenEndpoint = disco.TokenEndpoint;
                     helseIdConfig.ClientId = config.HelseIdClientId;
                     helseIdConfig.Certificate = GetCertificateByHelseIdConfig(config);
-                    helseIdConfig.ClientDefinition = !string.IsNullOrWhiteSpace(config.HelseIdClientJsonFilePath) ?
-                        GetHelseIdClientDefinition(config.HelseIdClientJsonFilePath) : null;
+                    helseIdConfig.ClientDefinition = !string.IsNullOrWhiteSpace(config.HelseIdClientJsonFilePath)
+                        ? GetHelseIdClientDefinition(config.HelseIdClientJsonFilePath)
+                        : null;
                 }, dataExtractionDate);
             })
             .Build();
     }
 
     public static X509Certificate2? GetCertificateByHelseIdConfig(AppsettingsConfig config) =>
-        !string.IsNullOrEmpty(config?.HelseIdCertificateThumbprint) ?
-            CertificateTools.GetFromStore(false, (X509FindType.FindByThumbprint, config.HelseIdCertificateThumbprint)) :
-        !string.IsNullOrEmpty(config?.HelseIdCertificatePath) ?
-            new X509Certificate2(config.HelseIdCertificatePath, config.HelseIdCertificatePassword, X509KeyStorageFlags.Exportable) :
-        null;
+        !string.IsNullOrEmpty(config?.HelseIdCertificateThumbprint)
+            ? CertificateTools.GetFromStore(false, (X509FindType.FindByThumbprint, config.HelseIdCertificateThumbprint))
+            : !string.IsNullOrEmpty(config?.HelseIdCertificatePath)
+                ? new X509Certificate2(config.HelseIdCertificatePath, config.HelseIdCertificatePassword,
+                    X509KeyStorageFlags.Exportable)
+                : null;
 
     public static HelseIdClientDefinition GetHelseIdClientDefinition(string helseIdClientJsonFilePath) =>
-         JsonSerializer.Deserialize<HelseIdClientDefinition>(File.ReadAllText(helseIdClientJsonFilePath)) ??
-            throw new InvalidOperationException("Could not deserialize HelseId Client file to HelseId Client Definition class");
+        JsonSerializer.Deserialize<HelseIdClientDefinition>(File.ReadAllText(helseIdClientJsonFilePath)) ??
+        throw new InvalidOperationException(
+            "Could not deserialize HelseId Client file to HelseId Client Definition class");
 }

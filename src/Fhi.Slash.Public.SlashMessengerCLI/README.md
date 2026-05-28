@@ -35,7 +35,7 @@ Dette dokumentet er en veiledning for bruk av SlashMessenger-pakken i NuGet. Det
 
 ## Om eksempelkode
 
-Eksempelkoden i dette prosjektet er skrevet i .Net 8 (C#) og benytter seg av NuGet-pakken `Fhi.Slash.Public.SlashMessenger` som ligger ute på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
+Eksempelkoden i dette prosjektet er skrevet i .Net 10 (C#) og benytter seg av NuGet-pakken `Fhi.Slash.Public.SlashMessenger` som ligger ute på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
 
 Konfigurasjoner av de ulike verdiene kan gjøres i `appsettings.json` (eller `appsettings.Development.json` ved lokal testing).
 Her har du mulighet til å endre informasjon om innsender, som for eksempel navn på EPJ-system og versjoner.
@@ -59,10 +59,15 @@ Input-argumenter:
 - Meldingstype (f.eks. 'HST_Konsultasjon').
 - Meldingsversjon (f.eks. 1).
 - Uttreksdato (f.eks. 01.01.2024). Denne verdien er valgfri; hvis den ikke settes, benyttes dagens dato.
+- Overordnet organisasjonsnummer (f.eks. 123456789). Denne verdien er valgfri; brukes ved multi-tenant innsending der en underorganisasjon sender på vegne av en overordnet organisasjon. Verdien må bestå av nøyaktig 9 siffer.
 
-Eksempel:
+Eksempler:
 
 `> C:/folder1/Fhi.Slash.Public.SlashMessengerCLI.exe "C:/folder2/message.json" "HST_Konsultasjon" "1" "01.01.2024"`
+
+Med multi-tenant (overordnet organisasjonsnummer):
+
+`> C:/folder1/Fhi.Slash.Public.SlashMessengerCLI.exe "C:/folder2/message.json" "HST_Konsultasjon" "1" "01.01.2024" "123456789"`
 
 ## Overordnet flyt
 

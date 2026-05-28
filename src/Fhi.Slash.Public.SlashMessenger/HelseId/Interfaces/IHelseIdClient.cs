@@ -13,6 +13,7 @@ public interface IHelseIdClient
     /// Retrieves an access token from HelseID.
     /// </summary>
     /// <param name="dPoPProofJwk">A <see cref="JsonWebKey"/> used to sign DPoP proofs associated with the access token.</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A <see cref="TokenResponse"/> containing the access token from HelseID.</returns>
-    public Task<TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk);
+    public Task<TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk, string? parentOrganizationNumber = null);
 }

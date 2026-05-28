@@ -42,18 +42,22 @@ public class DefaultHelseIdService : IHelseIdService
     /// Retrieves an access token from the HelseID client.
     /// </summary>
     /// <param name="dPoPProofJwk">The <see cref="JsonWebKey"/> used when generating DPoP proofs.</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>The access token as a string.</returns>
     /// <exception cref="HelseIdServiceException">Thrown if the access token retrieval fails.</exception>
-    public virtual async Task<string> GetAccessToken(JsonWebKey dPoPProofJwk)
+    public virtual async Task<string> GetAccessToken(JsonWebKey dPoPProofJwk, string? parentOrganizationNumber = null)
     {
         _logger.LogDebug("Getting Access Token from HelseId");
+
+        var normalizedParentOrganizationNumber = OrganizationNumberTools.NormalizeParentOrganizationNumber(parentOrganizationNumber);
+        var accessTokenCacheKey = GetAccessTokenCacheKey(normalizedParentOrganizationNumber);
 
         // Get access token from cache
         string? accessToken;
         try
         {
             _logger.LogTrace("Getting Access Token from cache");
-            accessToken = GetAccessTokenFromCache();
+            accessToken = GetAccessTokenFromCache(accessTokenCacheKey);
             _logger.LogTrace("Finished getting Access Token from cache. Found: {foundCachedAccessToken}", !string.IsNullOrEmpty(accessToken));
         }
         catch (Exception ex)
@@ -71,7 +75,7 @@ public class DefaultHelseIdService : IHelseIdService
         try
         {
             _logger.LogTrace("Requesting new Access Token from HelseId");
-            accessToken = await RequestNewAccessToken(dPoPProofJwk);
+            accessToken = await RequestNewAccessToken(dPoPProofJwk, normalizedParentOrganizationNumber, accessTokenCacheKey);
             _logger.LogTrace("Got Access Token from HelseId");
         }
         catch (Exception ex)
@@ -91,8 +95,10 @@ public class DefaultHelseIdService : IHelseIdService
     /// If the access token is already in the cache, the semaphore ensures that concurrent requests do not redundantly fetch a new token.
     /// </summary>
     /// <param name="dPoPProofJwk">The <see cref="JsonWebKey"/> used when generating DPoP proofs.</param>
+    /// <param name="normalizedParentOrganizationNumber">Normalized parent organization number used for multi-tenant token requests.</param>
+    /// <param name="accessTokenCacheKey">The cache key used for retrieving and storing the access token.</param>
     /// <returns>An access token as a string.</returns>
-    protected virtual async Task<string> RequestNewAccessToken(JsonWebKey dPoPProofJwk)
+    protected virtual async Task<string> RequestNewAccessToken(JsonWebKey dPoPProofJwk, string? normalizedParentOrganizationNumber, string accessTokenCacheKey)
     {
         _logger.LogDebug("Requesting new Access Token from HelseId");
 
@@ -103,7 +109,7 @@ public class DefaultHelseIdService : IHelseIdService
             // Return cached access token if available
             // This is to prevent multiple requests for access token
             _logger.LogTrace("Getting Access Token from cache");
-            var cachedAccessToken = GetAccessTokenFromCache();
+            var cachedAccessToken = GetAccessTokenFromCache(accessTokenCacheKey);
             _logger.LogTrace("Finished getting Access Token from cache. Found: {foundCachedAccessToken}", !string.IsNullOrEmpty(cachedAccessToken));
 
             if (cachedAccessToken != null)
@@ -113,7 +119,7 @@ public class DefaultHelseIdService : IHelseIdService
             }
 
             // Get new access token
-            var tokenResponse = await _helseIdClient.GetAccessToken(dPoPProofJwk);
+            var tokenResponse = await _helseIdClient.GetAccessToken(dPoPProofJwk, normalizedParentOrganizationNumber);
             if (tokenResponse.IsError || tokenResponse.AccessToken == null)
             {
                 var errorMessage = tokenResponse.Error ?? "No access token in the token response returned from HelseId";
@@ -122,7 +128,7 @@ public class DefaultHelseIdService : IHelseIdService
 
             // Cache the access token
             _logger.LogTrace("Caching Access Token from HelseId");
-            _memoryCache.Set(AccessTokenCacheKey, tokenResponse.AccessToken, TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 30)); // Skew expiry time -30 sec. To ensure that token is valid upon request
+            _memoryCache.Set(accessTokenCacheKey, tokenResponse.AccessToken, TimeSpan.FromSeconds(tokenResponse.ExpiresIn - 30)); // Skew expiry time -30 sec. To ensure that token is valid upon request
             _logger.LogTrace("Cached Access Token from HelseId");
 
             return tokenResponse.AccessToken;
@@ -137,7 +143,13 @@ public class DefaultHelseIdService : IHelseIdService
     /// <summary>
     /// Attempts to retrieve the access token from the cache.
     /// </summary>
+    /// <param name="accessTokenCacheKey">The cache key used for retrieving the access token.</param>
     /// <returns>A string containing the access token, or <c>null</c> if not found.</returns>
-    private string? GetAccessTokenFromCache() =>
-        _memoryCache.TryGetValue<string>(AccessTokenCacheKey, out var accessToken) ? accessToken : null;
+    private string? GetAccessTokenFromCache(string accessTokenCacheKey) =>
+        _memoryCache.TryGetValue<string>(accessTokenCacheKey, out var accessToken) ? accessToken : null;
+
+    private static string GetAccessTokenCacheKey(string? normalizedParentOrganizationNumber) =>
+        string.IsNullOrEmpty(normalizedParentOrganizationNumber) ?
+            AccessTokenCacheKey :
+            $"{AccessTokenCacheKey}:{normalizedParentOrganizationNumber}";
 }

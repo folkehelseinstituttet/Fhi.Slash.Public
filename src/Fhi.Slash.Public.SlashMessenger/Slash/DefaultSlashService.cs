@@ -59,9 +59,10 @@ public class DefaultSlashService : ISlashService
     /// <param name="rawJsonMessage">The serialized JSON string representing the message to be sent.</param>
     /// <param name="messageType">The type of the message.</param>
     /// <param name="messageVersion">The version of the message.</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests to HelseID.</param>
     /// <returns>An <see cref="SendMessageResponse"/> containing the response from the Slash API.</returns>
     /// <exception cref="SlashServiceException">Thrown when any step in the process fails.</exception>
-    public virtual async Task<SendMessageResponse> PrepareAndSendMessage(string rawJsonMessage, string messageType, string messageVersion)
+    public virtual async Task<SendMessageResponse> PrepareAndSendMessage(string rawJsonMessage, string messageType, string messageVersion, string? parentOrganizationNumber = null)
     {
         _logger.LogDebug("Sending message to Slash API");
 
@@ -108,7 +109,7 @@ public class DefaultSlashService : ISlashService
         try
         {
             _logger.LogTrace("Getting access token from HelseId");
-            dPoPAccessToken = await GetHelseDPoPAccessToken();
+            dPoPAccessToken = await GetHelseDPoPAccessToken(parentOrganizationNumber);
             _logger.LogTrace("Got access token from HelseId");
         }
         catch (Exception ex)
@@ -212,9 +213,10 @@ public class DefaultSlashService : ISlashService
     /// <summary>
     /// Retrieves an access token with DPoP support from HelseId.
     /// </summary>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A string containing the access token issued by HelseId.</returns>
-    protected virtual async Task<string> GetHelseDPoPAccessToken() =>
-        await _helseIdService.GetAccessToken(_dPoPProofJwk);
+    protected virtual async Task<string> GetHelseDPoPAccessToken(string? parentOrganizationNumber = null) =>
+        await _helseIdService.GetAccessToken(_dPoPProofJwk, parentOrganizationNumber);
 
     /// <summary>
     /// Creates a DPoP proof for the message.

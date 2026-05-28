@@ -14,6 +14,7 @@ public interface ISlashService
     /// <param name="rawJsonMessage">The serialized JSON string representing the message to be sent.</param>
     /// <param name="messageType">The type of the message.</param>
     /// <param name="messageVersion">The version of the message.</param>
+    /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests to HelseID.</param>
     /// <returns>An <see cref="SendMessageResponse"/> containing the response from the Slash API.</returns>
-    public Task<SendMessageResponse> PrepareAndSendMessage(string rawJsonMessage, string messageType, string messageVersion);
+    public Task<SendMessageResponse> PrepareAndSendMessage(string rawJsonMessage, string messageType, string messageVersion, string? parentOrganizationNumber = null);
 }

@@ -14,7 +14,7 @@
 # SLASH Messenger (NuGet-pakke)
 
 Dette dokumentet beskriver strukturen og oppbygningen av prosjektet `Fhi.Slash.Public.SlashMessenger`.
-Koden er skrevet i .NET 8 (C#) og er tilgjengelig som en NuGet-pakke (`Fhi.Slash.Public.SlashMessenger`) på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
+Koden er skrevet i .NET 10 (C#) og er tilgjengelig som en NuGet-pakke (`Fhi.Slash.Public.SlashMessenger`) på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
 
 
 ## Innhold
@@ -27,6 +27,7 @@ Koden er skrevet i .NET 8 (C#) og er tilgjengelig som en NuGet-pakke (`Fhi.Slash
       - [Sette opp prosjekt](#sette-opp-prosjekt)
       - [Eksempel og modifikasjoner](#eksempel-og-modifikasjoner)
       - [Konfigurasjoner](#konfigurasjoner)
+  - [Multi-tenant støtte](#multi-tenant-støtte)
   - [Logging](#logging)
   - [Tester](#tester)
       - [Struktur for integrasjonstester](#struktur-for-integrasjonstester)
@@ -76,6 +77,22 @@ Inkluderer endepunkt for innsending av meldinger og informasjon om EPJ-systemet 
 
 For å sikre stabil og effektiv håndtering av høy trafikk, bør hver http request som sendes inn være maksimalt 2 MB.
 Vær oppmerksom på at dette ikke håndteres automatisk av denne pakken, så dere må selv implementere denne begrensningen i deres system.
+
+## Multi-tenant støtte
+
+Pakken støtter multi-tenant innsending der en underorganisasjon sender meldinger på vegne av en overordnet organisasjon. Dette gjøres ved å oppgi et valgfritt `parentOrganizationNumber`-parameter til `PrepareAndSendMessage`-metoden i `ISlashService`.
+
+```csharp
+var response = await slashService.PrepareAndSendMessage(
+    messageFileContent, messageType, messageVersion, parentOrganizationNumber: "123456789");
+```
+
+Når `parentOrganizationNumber` er oppgitt:
+- Verdien må bestå av nøyaktig 9 siffer (norsk organisasjonsnummer).
+- Det legges til `assertion_details` med organisasjonens identifikator i token-forespørselen til HelseID.
+- Access tokens caches separat per organisasjonsnummer, slik at ulike organisasjoner ikke deler tokens.
+
+For mer informasjon om multi-tenant og HelseID, se [HelseID-dokumentasjonen](https://helseid.atlassian.net/wiki/spaces/HELSEID/overview).
 
 ## Logging
 Standardimplementasjonen av services og clients inkluderer logging med to ulike nivåer:

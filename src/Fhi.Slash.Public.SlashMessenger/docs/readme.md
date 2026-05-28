@@ -3,7 +3,7 @@ The client program simplifies interaction with the API by handling encryption, s
 
 See your GitHub page for more information about the messaging format.
 
-The component requires minimum .NET 8.0.
+The component requires minimum .NET 10.0.
 
 # How to contribute
 See [CONTRIBUTING.md](https://github.com/folkehelseinstituttet/Fhi.Slash.Mottak/blob/public-github/CONTRIBUTING.md)

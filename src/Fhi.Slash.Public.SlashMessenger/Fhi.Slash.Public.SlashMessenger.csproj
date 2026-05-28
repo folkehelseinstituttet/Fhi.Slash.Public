@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<authors>Folkehelseinstituttet (FHI)</authors>
@@ -13,6 +13,7 @@
 	<PackageDescription>The client program simplifies interaction with the API by handling encryption, signing, and HelseID authentication automatically. It allows organizations to seamlessly send healthcare data while adhering to security and compliance requirements.</PackageDescription>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageIcon>fhi.png</PackageIcon>
+	<UserSecretsId>9618b13f-a921-4607-a317-6b019474688b</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -31,12 +32,11 @@
 	
   <ItemGroup>
     <PackageReference Include="IdentityModel" Version="6.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.6.1" />
 	<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
-	<PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
 </Project>
