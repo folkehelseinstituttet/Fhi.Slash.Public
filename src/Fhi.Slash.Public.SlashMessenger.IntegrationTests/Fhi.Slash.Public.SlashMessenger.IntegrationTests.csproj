@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -47,10 +47,10 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.3.0" />
-	  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-	  <PackageReference Include="MSTest" Version="3.8.3" />
-	  <PackageReference Include="WireMock.Net" Version="1.7.4" />
+	  <PackageReference Include="Microsoft.AspNetCore.Hosting" />
+	  <PackageReference Include="Microsoft.NET.Test.Sdk" />
+	  <PackageReference Include="MSTest" />
+	  <PackageReference Include="WireMock.Net" />
   </ItemGroup>
 
   <ItemGroup>

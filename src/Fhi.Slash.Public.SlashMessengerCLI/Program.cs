@@ -2,7 +2,6 @@
 using Fhi.Slash.Public.SlashMessenger.Extensions;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Models;
 using Fhi.Slash.Public.SlashMessengerCLI.Config;
-using IdentityModel.Client;
 using Fhi.Slash.Public.SlashMessenger.Slash.Interfaces;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -10,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Fhi.Slash.Public.SlashMessengerCLI.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Duende.IdentityModel.Client;
 
 namespace Fhi.Slash.Public.SlashMessengerCLI;
 
@@ -136,13 +136,20 @@ public static class Program
             .Build();
     }
 
-    public static X509Certificate2? GetCertificateByHelseIdConfig(AppsettingsConfig config) =>
-        !string.IsNullOrEmpty(config?.HelseIdCertificateThumbprint)
-            ? CertificateTools.GetFromStore(false, (X509FindType.FindByThumbprint, config.HelseIdCertificateThumbprint))
-            : !string.IsNullOrEmpty(config?.HelseIdCertificatePath)
-                ? new X509Certificate2(config.HelseIdCertificatePath, config.HelseIdCertificatePassword,
-                    X509KeyStorageFlags.Exportable)
-                : null;
+    public static X509Certificate2? GetCertificateByHelseIdConfig(AppsettingsConfig config)
+    {
+        if (!string.IsNullOrEmpty(config.HelseIdCertificateThumbprint))
+        {
+            return CertificateTools.GetFromStore(false, (X509FindType.FindByThumbprint, config.HelseIdCertificateThumbprint));
+        }
+
+        if (!string.IsNullOrEmpty(config.HelseIdCertificatePath))
+        {
+            return X509CertificateLoader.LoadPkcs12FromFile(config.HelseIdCertificatePath, config.HelseIdCertificatePassword, X509KeyStorageFlags.Exportable);
+        }
+
+        return null;
+    }
 
     public static HelseIdClientDefinition GetHelseIdClientDefinition(string helseIdClientJsonFilePath) =>
         JsonSerializer.Deserialize<HelseIdClientDefinition>(File.ReadAllText(helseIdClientJsonFilePath)) ??

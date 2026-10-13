@@ -23,11 +23,8 @@ internal static class OrganizationNumberTools
     public static string ToOrganizationIdentifier(string parentOrganizationNumber)
     {
         var normalizedParentOrganizationNumber = NormalizeParentOrganizationNumber(parentOrganizationNumber);
-        if (normalizedParentOrganizationNumber == null)
-        {
-            throw new ArgumentException("Parent organization number is required.", nameof(parentOrganizationNumber));
-        }
-
-        return $"{OrganizationIdentifierPrefix}{normalizedParentOrganizationNumber}";
+        return normalizedParentOrganizationNumber == null
+            ? throw new ArgumentException("Parent organization number is required.", nameof(parentOrganizationNumber))
+            : $"{OrganizationIdentifierPrefix}{normalizedParentOrganizationNumber}";
     }
 }

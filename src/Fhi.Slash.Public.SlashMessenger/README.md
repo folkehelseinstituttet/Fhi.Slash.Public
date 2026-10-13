@@ -80,7 +80,7 @@ Vær oppmerksom på at dette ikke håndteres automatisk av denne pakken, så der
 
 ## Multi-tenant støtte
 
-Pakken støtter multi-tenant innsending der en underorganisasjon sender meldinger på vegne av en overordnet organisasjon. Dette gjøres ved å oppgi et valgfritt `parentOrganizationNumber`-parameter til `PrepareAndSendMessage`-metoden i `ISlashService`.
+Pakken støtter multi-tenant innsending der en avsender sender meldinger på vegne av en virksomhet. Dette gjøres ved å oppgi et valgfritt `parentOrganizationNumber`-parameter til `PrepareAndSendMessage`-metoden i `ISlashService`.
 
 ```csharp
 var response = await slashService.PrepareAndSendMessage(
@@ -89,6 +89,7 @@ var response = await slashService.PrepareAndSendMessage(
 
 Når `parentOrganizationNumber` er oppgitt:
 - Verdien må bestå av nøyaktig 9 siffer (norsk organisasjonsnummer).
+- Verdien skal være hovedenhetens organisasjonsnummer for virksomheten det sendes på vegne av. Underenhet skal ikke oppgis.
 - Det legges til `assertion_details` med organisasjonens identifikator i token-forespørselen til HelseID.
 - Access tokens caches separat per organisasjonsnummer, slik at ulike organisasjoner ikke deler tokens.
 

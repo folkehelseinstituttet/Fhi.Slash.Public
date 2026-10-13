@@ -1,11 +1,11 @@
-﻿using IdentityModel.Client;
-using Microsoft.Extensions.Logging;
+﻿using Duende.IdentityModel.Client;
 using Fhi.Slash.Public.SlashMessenger.Slash.Exceptions;
 using Fhi.Slash.Public.SlashMessenger.Slash.Interfaces;
 using Fhi.Slash.Public.SlashMessenger.Slash.Models;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
-using static IdentityModel.OidcConstants;
+using static Duende.IdentityModel.OidcConstants;
 
 namespace Fhi.Slash.Public.SlashMessenger.Slash;
 
@@ -64,17 +64,14 @@ public class DefaultSlashClient : ISlashClient
         try
         {
             _logger.LogTrace("Parsing public keys from Slash API");
-            keys = JsonSerializer.Deserialize<List<PublicKeyInfo>>(rawPublicKeys)?
-                .OrderByDescending(k => k.ExpirationDate)
-                .ToList();
 
-            if (keys == null)
-            {
-                throw new InvalidOperationException("Parsing of response payload resulted in null");
-            }
+            keys = (JsonSerializer.Deserialize<List<PublicKeyInfo>>(rawPublicKeys)?
+                .OrderByDescending(k => k.ExpirationDate)
+                .ToList()) ?? throw new InvalidOperationException("Parsing of response payload resulted in null");
+
             _logger.LogTrace("Public keys parsed successfully");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             throw new SlashClientException("Could not parse public keys from Slash API", ex);
         }
@@ -122,7 +119,7 @@ public class DefaultSlashClient : ISlashClient
             httpClient.DefaultRequestHeaders.Add(HttpHeaders.DPoP, message.DPoPProof!);
             _logger.LogTrace("HttpClient configured successfully");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             throw new SlashClientException("Failed to configure the HttpClient before sending the message", ex);
         }

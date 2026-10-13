@@ -1,5 +1,5 @@
-﻿using IdentityModel;
-using IdentityModel.Client;
+﻿using Duende.IdentityModel.Client;
+using Duende.IdentityModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -9,9 +9,8 @@ using Fhi.Slash.Public.SlashMessenger.HelseId.Interfaces;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using static IdentityModel.OidcConstants;
 
-using TokenResponse = IdentityModel.Client.TokenResponse;
+using static Duende.IdentityModel.OidcConstants;
 
 namespace Fhi.Slash.Public.SlashMessenger.HelseId;
 
@@ -37,7 +36,7 @@ public class DefaultHelseIdClient : IHelseIdClient
     /// <param name="httpClientFactory">Factory for creating <see cref="HttpClient"/> instances.</param>
     /// <param name="helseIdJwk">The <see cref="JsonWebKey"/> used for HelseID authentication.</param>
     public DefaultHelseIdClient(
-        HelseIdConfig helseIdConfig, 
+        HelseIdConfig helseIdConfig,
         ILogger<DefaultHelseIdClient> logger,
         IHttpClientFactory httpClientFactory,
         [FromKeyedServices(ServiceCollectionExtensions.helseIdJwkKey)] JsonWebKey helseIdJwk)
@@ -58,7 +57,7 @@ public class DefaultHelseIdClient : IHelseIdClient
     /// <param name="parentOrganizationNumber">Optional parent organization number used for multi-tenant token requests.</param>
     /// <returns>A <see cref="TokenResponse"/> with the Access Token</returns>
     /// <exception cref="HelseIdClientException">Thrown if the access token retrieval fails.</exception>
-    public virtual async Task<TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk, string? parentOrganizationNumber = null)
+    public virtual async Task<Duende.IdentityModel.Client.TokenResponse> GetAccessToken(JsonWebKey dPoPProofJwk, string? parentOrganizationNumber = null)
     {
         _logger.LogDebug("Getting Access Token from HelseId");
 
@@ -74,7 +73,7 @@ public class DefaultHelseIdClient : IHelseIdClient
         }
 
         // Requesting Access Token from HelseId
-        TokenResponse tokenResponse;
+        Duende.IdentityModel.Client.TokenResponse tokenResponse;
         try
         {
             using var httpClient = _httpClientFactory.CreateClient(_helseIdConfig.BasicClientName);
@@ -134,7 +133,7 @@ public class DefaultHelseIdClient : IHelseIdClient
             new(JwtClaimTypes.IssuedAt, DateTimeOffset.Now.ToUnixTimeSeconds().ToString()),
             new(JwtClaimTypes.JwtId, Guid.NewGuid().ToString("N"))
         };
-        
+
         var signingCredentials = new SigningCredentials(_helseIdJwk, SecurityAlgorithms.RsaSha256);
 
         var header = new JwtHeader(signingCredentials, null, "client-authentication+jwt");
@@ -150,7 +149,7 @@ public class DefaultHelseIdClient : IHelseIdClient
         {
             payload["assertion_details"] = BuildAssertionDetails(normalizedParentOrganizationNumber);
         }
-        
+
         var token = new JwtSecurityToken(header, payload);
 
         return new ClientAssertion

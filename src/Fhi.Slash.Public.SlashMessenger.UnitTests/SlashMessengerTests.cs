@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
 using Fhi.Slash.Public.SlashMessenger.HelseId;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Exceptions;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Interfaces;
@@ -24,8 +23,8 @@ public class SlashMessengerTests
 {
     private readonly string _accessToken = File.ReadAllText("TestFiles/access-token.txt");
     private readonly string _testMessage = File.ReadAllText("TestFiles/empty_message.json");
-    private readonly JObject _testKeys = JObject.Parse(File.ReadAllText("TestFiles/test_keys.json"))!;
-    private readonly X509Certificate2 _certificate = new("TestFiles/Certs/test_cert_without_password.pfx", string.Empty, X509KeyStorageFlags.Exportable);
+    private readonly JsonDocument _testKeys = JsonDocument.Parse(File.ReadAllText("TestFiles/test_keys.json"))!;
+    private readonly X509Certificate2 _certificate = X509CertificateLoader.LoadPkcs12FromFile("TestFiles/Certs/test_cert_without_password.pfx", string.Empty, X509KeyStorageFlags.Exportable);
     private readonly JsonWebKey _dPoPProofJwk = new(File.ReadAllText("TestFiles/private_jwk.json"));
 
     private readonly Uri _slashBaseUrl = new("https://slash-api.just-a-test.com");
@@ -162,7 +161,7 @@ public class SlashMessengerTests
         helseIdHttpFactory.CreateClient(helseIdConfig.BasicClientName).Returns(_ =>
             CreateHelseIdClient(request =>
             {
-                requestBody = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
         var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
@@ -214,7 +213,7 @@ public class SlashMessengerTests
         helseIdHttpFactory.CreateClient(helseIdConfig.BasicClientName).Returns(_ =>
             CreateHelseIdClient(request =>
             {
-                requestBody = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
         var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
@@ -253,7 +252,7 @@ public class SlashMessengerTests
         helseIdHttpFactory.CreateClient(helseIdConfig.BasicClientName).Returns(_ =>
             CreateHelseIdClient(request =>
             {
-                requestBody = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
         var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
@@ -405,7 +404,7 @@ public class SlashMessengerTests
                         new()
                         {
                             Id = "TESTKEY",
-                            PublicKey = _testKeys.Value<string>("publicKey")!,
+                            PublicKey = _testKeys.RootElement.GetProperty("publicKey").GetString()!,
                             ExpirationDate = DateTime.Now.AddDays(1)
                         }
                     }))
@@ -478,6 +477,8 @@ public class SlashMessengerTests
             BaseAddress = _helseIdBaseUrl,
         };
     }
+
+    public TestContext TestContext { get; set; }
 }
 
 public class MockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handlerFunc) : DelegatingHandler

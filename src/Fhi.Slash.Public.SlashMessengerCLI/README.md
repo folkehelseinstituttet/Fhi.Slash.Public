@@ -59,7 +59,7 @@ Input-argumenter:
 - Meldingstype (f.eks. 'HST_Konsultasjon').
 - Meldingsversjon (f.eks. 1).
 - Uttreksdato (f.eks. 01.01.2024). Denne verdien er valgfri; hvis den ikke settes, benyttes dagens dato.
-- Overordnet organisasjonsnummer (f.eks. 123456789). Denne verdien er valgfri; brukes ved multi-tenant innsending der en underorganisasjon sender på vegne av en overordnet organisasjon. Verdien må bestå av nøyaktig 9 siffer.
+- Overordnet organisasjonsnummer (f.eks. 123456789). Denne verdien er valgfri; brukes ved multi-tenant innsending. Oppgi hovedenhetens organisasjonsnummer for virksomheten det sendes på vegne av. Underenhet skal ikke oppgis. Verdien må bestå av nøyaktig 9 siffer.
 
 Eksempler:
 

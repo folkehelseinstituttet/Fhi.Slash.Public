@@ -54,7 +54,7 @@ Meldinger sendes i JSON-format og må krypteres, signeres, og autentiseres ved b
 
 ### Krav
 
-Tjenesten benytter HelseID til autentisering. Det stilles derfor krav til at enhver innsender har en oppføring i HelseID for den lokasjonen som skal sende inn data gjennom denne tjenesten. (HelseID-klienten bør være utstedt til bedriftsnummeret for den faktiske lokasjonen)
+Tjenesten benytter HelseID til autentisering. Det stilles derfor krav til at enhver innsender har en oppføring i HelseID for virksomheten som skal sende inn data gjennom denne tjenesten. Ved multi-tenant innsending holder det å oppgi hovedenhetens organisasjonsnummer for virksomheten det sendes på vegne av; underenhet skal ikke oppgis.
 
 I tillegg til dette kan det være nødvendig å opprette nettverksåpninger mot API-tjenesten til FHI på NHN og helsenettet.
 
@@ -130,7 +130,7 @@ https://app-mottak-api-et.azurewebsites.net/swagger-tools/download-example?messa
 API-tjenesten benytter HelseID til autentisering/tilgangssikring (machine to machine).
 Dette realiseres ved hjelp av OpenID Connect(OIDC). Alle forespørsler til API-et blir dermed kontrollert mot HelseID.
 
-For HelseID så kan en enten benytte klientkonfig fra rapporterende enhet direkte eller benytte klientkonfig fra EPJ (multi-tenant) for å få utstedt token (JWT) med nødvendige claims/påstander. Hvis en benytter multi-tenant så må EPJ sitt orgnummer settes som claim "helseid://claims/client/claims/orgnr_supplier", mens rapporterende enhet settes som "helseid://claims/client/claims/orgnr_parent".
+For HelseID så kan en enten benytte klientkonfig fra rapporterende enhet direkte eller benytte klientkonfig fra EPJ (multi-tenant) for å få utstedt token (JWT) med nødvendige claims/påstander. Hvis en benytter multi-tenant så må EPJ sitt orgnummer settes som claim "helseid://claims/client/claims/orgnr_supplier", mens hovedenhetens organisasjonsnummer for virksomheten det sendes på vegne av settes som "helseid://claims/client/claims/orgnr_parent". Underenhet skal ikke sendes inn her.
 Utstedt token skal deretter benyttes i forespørsler mot API-et.
 
 Les mer om HelseID og den tekniske dokumentasjonen her:
@@ -415,6 +415,43 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 | 2008     | SchemaValidationFailed                                    | Dekryptert melding samsvarer ikke med meldingsskjema                        |
 | 2009     | PayloadSizeLimitExceeded                                  | Payload size exceeded limit                                                 |
 | 2010     | StorageError                                              | Failed to store the message                                                 |
+
+#### 6) Utvidet kvittering
+API-et kan returnere en utvidet kvittering som gir detaljert informasjon om behandling av meldingen.
+
+Eksempel:
+
+```json
+{
+  "receiptRequestCorrelationId": "5840e587-22b4-4673-8113-28eb0424f648",
+  "organizationNumber": "123456789",
+  "supplierOrganizationNumber": "123123123",
+  "messageType": "HST_Konsultasjon",
+  "messageVersion": "1",
+  "receivedTimestamp": "2026-10-01T00:00:00",
+  "processingStatus": "PROCESSED",
+  "summary": { "totalEvents": 1 },
+  "steps": [
+	{ "step": "RECEIVED", "status": "OK", "timestamp": "2026-10-01T00:00:01" },
+	{ "step": "SCHEMA_VALIDATION", "status": "OK", "timestamp": "2026-10-01T00:00:02" },
+	{ "step": "PROCESSING", "status": "OK", "timestamp": "2026-10-01T00:00:03" }
+  ]
+}
+```
+
+**GET**
+**/Receipt/{receiptRequestCorrelationId}**
+Henter utvidet kvittering for en enkeltinnsending basert på innsendingens korrelasjons-ID.
+
+**POST**
+**/Receipt/batch**
+Henter utvidet kvittering for flere innsendinger basert på innsendingenes korrelasjons-IDer.
+Maks 100 korrelasjons-IDer per forespørsel.
+
+**GET**
+**/Receipt/period**
+Henter utvidet kvittering for flere innsendinger basert på periode og andre detaljer.
+Maks periode på 31 dager.
 
 <div style="page-break-after: always"></div>
 

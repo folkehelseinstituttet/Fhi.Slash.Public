@@ -1,4 +1,3 @@
-using IdentityModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -195,11 +194,11 @@ public class DefaultSlashService : ISlashService
     protected virtual EncryptedMessage EncryptMessage(string rawJsonMessage, PublicKeyInfo publicKeyInfo)
     {
         var msgInBytes = Encoding.UTF8.GetBytes(rawJsonMessage);
-        var msgHash = Base64Url.Encode(SHA256.HashData(msgInBytes));
+        var msgHash = Base64UrlEncoder.Encode(SHA256.HashData(msgInBytes));
         var symmetricKey = CryptoTools.GenerateRandomKey(32);
         byte[] encSymKeyBytes = CryptoTools.EncryptWithPublicKey(symmetricKey, publicKeyInfo.PublicKey);
         byte[] encryptedMessageBytes = CryptoTools.EncryptWithSymmetricKey(msgInBytes, symmetricKey);
-        var encSymKey = Base64Url.Encode(encSymKeyBytes);
+        var encSymKey = Base64UrlEncoder.Encode(encSymKeyBytes);
         var encryptedMessage = Convert.ToBase64String(encryptedMessageBytes);
 
         return new EncryptedMessage

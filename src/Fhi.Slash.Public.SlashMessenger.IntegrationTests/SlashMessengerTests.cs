@@ -1,4 +1,3 @@
-using IdentityModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
@@ -76,7 +75,7 @@ public sealed class SlashMessengerTests
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint);
         var accessToken = slashRequest!.Headers!["Authorization"].First();
-        Assert.IsTrue(accessToken.StartsWith("DPoP"));
+        Assert.StartsWith("DPoP", accessToken);
     }
 
     [TestMethod]
@@ -123,12 +122,12 @@ public sealed class SlashMessengerTests
         var encSymKey = dPoPPayload.GetProperty("enc_sym_key").GetString();
         var privateKey = ConvertPemToPrivateJwk(File.ReadAllText(SlashPrivatePemFilePath));
 
-        var encSymKeyBytes = Base64Url.Decode(encSymKey!);
+        var encSymKeyBytes = Base64UrlEncoder.DecodeBytes(encSymKey!);
         var symKey = CreateRsaFromJwk(privateKey).Decrypt(encSymKeyBytes, RSAEncryptionPadding.OaepSHA256);
 
-        var msgBytes = DecryptWithSymmetricKey(Base64Url.Decode(rawBody), symKey);
+        var msgBytes = DecryptWithSymmetricKey(Base64UrlEncoder.DecodeBytes(rawBody), symKey);
         var msg = Encoding.UTF8.GetString(msgBytes);
-        var msgHash = Base64Url.Encode(SHA256.HashData(Encoding.UTF8.GetBytes(msg)));
+        var msgHash = Base64UrlEncoder.Encode(SHA256.HashData(Encoding.UTF8.GetBytes(msg)));
 
         Assert.AreEqual(dPoPMsgHash, msgHash);
         Assert.AreEqual(File.ReadAllText(ClientTestMessage1FilePath), msg);
@@ -147,11 +146,11 @@ public sealed class SlashMessengerTests
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint)!;
         Assert.IsNotNull(slashRequest.Headers);
-        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-vendor-name")));
-        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-software-name")));
-        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-software-version")));
-        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-export-software-version")));
-        Assert.IsTrue(slashRequest.Headers.Any(h => h.Key.Equals("x-data-extraction-date")));
+        Assert.Contains(h => h.Key.Equals("x-vendor-name"), slashRequest.Headers);
+        Assert.Contains(h => h.Key.Equals("x-software-name"), slashRequest.Headers);
+        Assert.Contains(h => h.Key.Equals("x-software-version"), slashRequest.Headers);
+        Assert.Contains(h => h.Key.Equals("x-export-software-version"), slashRequest.Headers);
+        Assert.Contains(h => h.Key.Equals("x-data-extraction-date"), slashRequest.Headers);
     }
 
     [TestMethod]
@@ -237,10 +236,11 @@ public sealed class SlashMessengerTests
 
         var host = SetupHost(_mockServer.Url!, preCustomConfig: services =>
         {
-            services.AddHttpClient(defaultSlashConfig.BasicClientName, config => {
+            services.AddHttpClient(defaultSlashConfig.BasicClientName, config =>
+            {
                 config.BaseAddress = new Uri(new Uri(_mockServer.Url!), "slash/");
                 config.DefaultRequestHeaders.Add(testHeader, "test");
-             });
+            });
         });
 
         // Act
@@ -250,7 +250,7 @@ public sealed class SlashMessengerTests
         var getKeysRequest = GetRequestLog(_mockServer, SlashKeysEndpoint);
         Assert.IsNotNull(getKeysRequest);
         Assert.IsNotNull(getKeysRequest.Headers);
-        Assert.IsTrue(getKeysRequest.Headers.Any(h => h.Key.Equals(testHeader)));
+        Assert.Contains(h => h.Key.Equals(testHeader), getKeysRequest.Headers);
     }
 
     private void SetupMockServer()
@@ -297,7 +297,7 @@ public sealed class SlashMessengerTests
 
               var dPoPToken = new JwtSecurityTokenHandler().ReadJwtToken(rawDPoP);
 
-              return dPoPToken.Payload.ContainsKey("nonce") && dPoPToken.Payload["nonce"].Equals(nonce);
+              return dPoPToken.Payload.TryGetValue("nonce", out var nonceValue) && nonceValue?.Equals(nonce) == true;
           }))
           .RespondWith(Response.Create().WithStatusCode(HttpStatusCode.OK).WithBodyAsJson(new
           {
@@ -325,10 +325,10 @@ public sealed class SlashMessengerTests
                 .WithStatusCode(HttpStatusCode.OK)
                 .WithHeader("X-Correlation-ID", Guid.NewGuid().ToString())
                 .WithBodyAsJson(new
-                   {
-                       delivered = true,
-                       errors = Array.Empty<object>()
-                   }));
+                {
+                    delivered = true,
+                    errors = Array.Empty<object>()
+                }));
     }
 
     private static IHost SetupHost(string baseUrl, Action<IServiceCollection>? preCustomConfig = null, HelseIdClientDefinition? helseIdClientDefinition = null) =>
@@ -347,31 +347,36 @@ public sealed class SlashMessengerTests
                 {
                     helseIdConfig.TokenEndpoint = $"{baseUrl}/helseId/connect/token";
                     helseIdConfig.ClientId = "just-a-test-client";
-                    helseIdConfig.Certificate = helseIdClientDefinition == null ? new X509Certificate2(ClientCert1FilePath, string.Empty, X509KeyStorageFlags.Exportable) : null;
+                    helseIdConfig.Certificate = helseIdClientDefinition == null ? X509CertificateLoader.LoadPkcs12FromFile(ClientCert1FilePath, string.Empty, X509KeyStorageFlags.Exportable) : null;
                     helseIdConfig.ClientDefinition = helseIdClientDefinition;
                 });
             })
             .Build();
 
     private static X509Certificate2 LoadCertificate(string path) =>
-        new(path, string.Empty, X509KeyStorageFlags.Exportable);
+        X509CertificateLoader.LoadPkcs12FromFile(path, string.Empty, X509KeyStorageFlags.Exportable);
+
 
     private static (string Header, string Payload, string Signature) SplitJwt(string jwt)
     {
         var parts = jwt.Split('.');
-        Assert.AreEqual(3, parts.Length);
+        Assert.HasCount(3, parts);
         return (parts[0], parts[1], parts[2]);
     }
 
     private static IRequestMessage? GetRequestLog(WireMockServer mockServer, string requestPath, string? method = null) => mockServer.LogEntries
-            .FirstOrDefault(log =>
-                log.RequestMessage.AbsolutePath.Equals(requestPath, StringComparison.OrdinalIgnoreCase) &&
-                (string.IsNullOrEmpty(method) || log.RequestMessage.Method.Equals(method, StringComparison.OrdinalIgnoreCase)))?.RequestMessage;
+        .Select(log => log.RequestMessage)
+        .FirstOrDefault(request =>
+            request != null &&
+            request.AbsolutePath.Equals(requestPath, StringComparison.OrdinalIgnoreCase) &&
+            (string.IsNullOrEmpty(method) || request.Method.Equals(method, StringComparison.OrdinalIgnoreCase)));
 
     private static IResponseMessage? GetResponseLog(WireMockServer wireMockServer, string requestPath, string? method = null) => wireMockServer.LogEntries
             .FirstOrDefault(log =>
+                log.RequestMessage is not null &&
                 log.RequestMessage.AbsolutePath.Equals(requestPath, StringComparison.OrdinalIgnoreCase) &&
-                (string.IsNullOrEmpty(method) || log.RequestMessage.Method.Equals(method, StringComparison.OrdinalIgnoreCase)))?.ResponseMessage;
+                (string.IsNullOrEmpty(method) || log.RequestMessage.Method.Equals(method, StringComparison.OrdinalIgnoreCase)))
+            ?.ResponseMessage;
 
     private static void AssertJwtSignature(X509Certificate2 cert, string header, string payload, string signature, bool shouldBeValid)
     {

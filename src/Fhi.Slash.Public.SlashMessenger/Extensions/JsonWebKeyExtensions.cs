@@ -1,7 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Text;
-using IdentityModel;
+using Duende.IdentityModel;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Fhi.Slash.Public.SlashMessenger.Extensions;
@@ -80,7 +80,7 @@ internal static class JsonWebKeyExtensions
             // ath: hash of the access token. The value MUST be the result of a base64url encoding
             // the SHA-256 [SHS] hash of the ASCII encoding of the associated access token's value.
             var hash = SHA256.HashData(Encoding.ASCII.GetBytes(accessToken));
-            var ath = Base64Url.Encode(hash);
+            var ath = Base64UrlEncoder.Encode(hash);
 
             payload[JwtClaimTypes.DPoPAccessTokenHash] = ath;
         }
