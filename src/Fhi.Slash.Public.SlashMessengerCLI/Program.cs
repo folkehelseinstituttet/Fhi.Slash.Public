@@ -46,28 +46,32 @@ public static class Program
             parentOrganizationNumber);
     }
 
-    public static async Task Execute(IHost host, string messageFilePath, string messageType, string messageVersion,
+    public static Task Execute(IHost host, string messageFilePath, string messageType, string messageVersion,
         DateTime? dataExtractionDate = null, string? parentOrganizationNumber = null)
     {
-        // Print Info
-        Console.WriteLine($"MessageFilePath: {messageFilePath}");
+        var messageFileContent = File.ReadAllText(messageFilePath);
+        return ExecuteWithMessage(host, messageFileContent, messageType, messageVersion, dataExtractionDate, parentOrganizationNumber);
+    }
+
+    public static Task ExecuteWithMessage(IHost host, string messageContent, string messageType, string messageVersion,
+        DateTime? dataExtractionDate = null, string? parentOrganizationNumber = null)
+    {
         Console.WriteLine($"MessageType: {messageType}");
         Console.WriteLine($"MessageVersion: {messageVersion}");
         Console.WriteLine($"DataExtractionDate: {dataExtractionDate?.ToString("dd.MM.yyyy") ?? "Today"}");
         if (!string.IsNullOrWhiteSpace(parentOrganizationNumber))
+        {
             Console.WriteLine($"ParentOrganizationNumber: {parentOrganizationNumber}");
+        }
 
-        // Load Message File
-        var messageFileContent = File.ReadAllText(messageFilePath) ??
-                                 throw new InvalidOperationException(
-                                     $"Could not load message file. File Path: {messageFilePath}");
-
-        // Send Message
         var slashService = host.Services.GetRequiredService<ISlashService>();
-        var response = await slashService.PrepareAndSendMessage(messageFileContent, messageType, messageVersion,
-            parentOrganizationNumber);
+        return PrintResponse(slashService, messageContent, messageType, messageVersion, parentOrganizationNumber);
+    }
 
-        // Print Response
+    private static async Task PrintResponse(ISlashService slashService, string messageContent, string messageType, string messageVersion, string? parentOrganizationNumber)
+    {
+        var response = await slashService.PrepareAndSendMessage(messageContent, messageType, messageVersion, parentOrganizationNumber);
+
         Console.WriteLine("\nResponse:");
         Console.WriteLine($" CorrelationId: {response.CorrelationId}");
         Console.WriteLine($" Delivered: {response.ProcessMessageResponse.Delivered}");

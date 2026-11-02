@@ -10,20 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="TestFiles\Certs\test_cert_without_password.pfx" />
-    <None Remove="TestFiles\Certs\test_cert_with_password.pfx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="TestFiles\Certs\test_cert_without_password.pfx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Certs\test_cert_with_password.pfx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

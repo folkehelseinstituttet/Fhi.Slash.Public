@@ -27,10 +27,10 @@ Koden er skrevet i .NET 10 (C#) og er tilgjengelig som en NuGet-pakke (`Fhi.Slas
       - [Sette opp prosjekt](#sette-opp-prosjekt)
       - [Eksempel og modifikasjoner](#eksempel-og-modifikasjoner)
       - [Konfigurasjoner](#konfigurasjoner)
+      - [Maksimal størrelse på innsending](#maksimal-størrelse-på-innsending)
   - [Multi-tenant støtte](#multi-tenant-støtte)
   - [Logging](#logging)
   - [Tester](#tester)
-      - [Struktur for integrasjonstester](#struktur-for-integrasjonstester)
   - [Gi oss dine tilbakemeldinger](#gi-oss-dine-tilbakemeldinger)
 
 <div style="page-break-after: always"></div>
@@ -119,14 +119,6 @@ Prosjektet inneholder både unit-tester og integrasjonstester, med eksempler som
 Om en trenger testfiler så kan dette lastes ned fra vårt test miljø.
 Se instruksjoner her: https://github.com/folkehelseinstituttet/Fhi.Slash.Public?tab=readme-ov-file#testfiler
 
-#### Struktur for integrasjonstester
-I mappen `TestFiles` finner du tre undermapper:
- - **Client:** Data for innsendingsprogrammet.
- - **HelseID:** Data for HelseID.
- - **Slash:**  Data for Slash Mottak API.
-
-Denne strukturen sikrer at man får oversikt over hvilke datasett hver aktør benytter for at løsningen skal fungere korrekt.
-
 <div style="page-break-after: always"></div>
 
 ## Gi oss dine tilbakemeldinger
@@ -135,4 +127,4 @@ Dersom du opplever problemer eller har forslag til forbedringer i dette reposito
 Vi oppfordrer deg til å opprette et issue på GitHub dersom du finner feil, har spørsmål eller ønsker å foreslå nye funksjoner. Alle tilbakemeldinger, store som små, er verdifulle og hjelper oss med å forbedre kvaliteten og funksjonaliteten til løsningen.
 
 Takk for at du bidrar til å gjøre prosjektet bedre!
-[Opprett et issue på GitHub](https://github.com/folkehelseinstituttet/Fhi.Slash.Mottak/issues)
+[Opprett et issue på GitHub](https://github.com/folkehelseinstituttet/Fhi.Slash.Public/issues)

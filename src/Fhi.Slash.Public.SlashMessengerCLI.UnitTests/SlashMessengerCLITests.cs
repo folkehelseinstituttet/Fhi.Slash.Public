@@ -1,9 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Fhi.Slash.Public.SlashMessenger.Slash.Interfaces;
 using Fhi.Slash.Public.SlashMessenger.Slash.Models;
 using Fhi.Slash.Public.SlashMessengerCLI.Config;
-using System.Security.Cryptography;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NSubstitute;
 
 namespace Fhi.Slash.Public.SlashMessengerCLI.UnitTests;
@@ -11,22 +12,25 @@ namespace Fhi.Slash.Public.SlashMessengerCLI.UnitTests;
 [TestClass]
 public class SlashMessengerCLITests
 {
-    private const string certWithoutPasswordPath = "TestFiles/Certs/test_cert_without_password.pfx";
-    private const string certWithPasswordPath = "TestFiles/Certs/test_cert_with_password.pfx";
-    private readonly AppsettingsConfig defaultConfig = new()
+    private readonly AppsettingsConfig _defaultConfig;
+
+    public SlashMessengerCLITests()
     {
-        HelseIdCertificateThumbprint = string.Empty,
-        HelseIdCertificatePath = string.Empty,
-        HelseIdCertificatePassword = string.Empty,
-        HelseIdOpenIdConfigurationUrl = string.Empty,
-        HelseIdClientJsonFilePath = string.Empty,
-        SenderExportSoftwareVersion = string.Empty,
-        SenderSoftwareVersion = string.Empty,
-        SenderSoftwareName = string.Empty,
-        SenderVendorName = string.Empty,
-        HelseIdClientId = string.Empty,
-        SlashBaseUrl = string.Empty,
-    };
+        _defaultConfig = new AppsettingsConfig
+        {
+            HelseIdCertificateThumbprint = string.Empty,
+            HelseIdCertificatePath = string.Empty,
+            HelseIdCertificatePassword = string.Empty,
+            HelseIdOpenIdConfigurationUrl = string.Empty,
+            HelseIdClientJsonFilePath = string.Empty,
+            SenderExportSoftwareVersion = string.Empty,
+            SenderSoftwareVersion = string.Empty,
+            SenderSoftwareName = string.Empty,
+            SenderVendorName = string.Empty,
+            HelseIdClientId = string.Empty,
+            SlashBaseUrl = string.Empty,
+        };
+    }
 
     [TestMethod]
     public async Task ShouldSendMessage()
@@ -43,25 +47,25 @@ public class SlashMessengerCLITests
                     Errors =
                     [
                         new()
-                        {
-                            ErrorCode = 0,
-                            ErrorDetails = "TestDetails 1",
-                            ErrorMessage = "TestMessage 1",
-                            PropertyName = "TestProperty 1"
-                        },
-                        new()
-                        {
-                            ErrorCode = 1,
-                            ErrorDetails = "TestDetails 2",
-                            ErrorMessage = "TestMessage 2",
-                            PropertyName = "TestProperty 2"
-                        }
+                    {
+                        ErrorCode = 0,
+                        ErrorDetails = "TestDetails 1",
+                        ErrorMessage = "TestMessage 1",
+                        PropertyName = "TestProperty 1"
+                    },
+                    new()
+                    {
+                        ErrorCode = 1,
+                        ErrorDetails = "TestDetails 2",
+                        ErrorMessage = "TestMessage 2",
+                        PropertyName = "TestProperty 2"
+                    }
                     ]
                 },
                 ResposeMessage = new HttpResponseMessage()
             });
 
-        var testHost = new HostBuilder()
+        using var testHost = new HostBuilder()
             .ConfigureServices((ctx, services) =>
             {
                 services.AddTransient(_ => slashService);
@@ -70,18 +74,13 @@ public class SlashMessengerCLITests
 
         var msgType = "testType";
         var msgVersion = "testVersion";
-        var filename = "testfile.txt";
         var fileContent = "Test message content";
-        File.WriteAllText(filename, fileContent);
 
         // Act
-        await Program.Execute(testHost, filename, msgType, msgVersion);
+        await Program.ExecuteWithMessage(testHost, fileContent, msgType, msgVersion);
 
         // Assert
         await slashService.Received(1).PrepareAndSendMessage(fileContent, msgType, msgVersion);
-
-        // Cleanup
-        File.Delete(filename);
     }
 
     [TestMethod]
@@ -102,7 +101,7 @@ public class SlashMessengerCLITests
                 ResposeMessage = new HttpResponseMessage()
             });
 
-        var testHost = new HostBuilder()
+        using var testHost = new HostBuilder()
             .ConfigureServices((ctx, services) =>
             {
                 services.AddTransient(_ => slashService);
@@ -111,29 +110,24 @@ public class SlashMessengerCLITests
 
         var msgType = "testType";
         var msgVersion = "testVersion";
-        var filename = "testfile_multitenant.txt";
         var fileContent = "Test message content";
-        File.WriteAllText(filename, fileContent);
 
         // Act
-        await Program.Execute(testHost, filename, msgType, msgVersion, parentOrganizationNumber: parentOrganizationNumber);
+        await Program.ExecuteWithMessage(testHost, fileContent, msgType, msgVersion, parentOrganizationNumber: parentOrganizationNumber);
 
         // Assert
         await slashService.Received(1).PrepareAndSendMessage(fileContent, msgType, msgVersion, parentOrganizationNumber);
-
-        // Cleanup
-        File.Delete(filename);
     }
 
     [TestMethod]
     public void ShouldTryToGetCertFromCertStoreIfThumbprintProvided()
     {
         // Arrange
-        defaultConfig.HelseIdCertificateThumbprint = "non-existent-thumbprint";
+        _defaultConfig.HelseIdCertificateThumbprint = "non-existent-thumbprint";
 
         // Act & Assert
         var exception = Assert.ThrowsExactly<KeyNotFoundException>(() =>
-            Program.GetCertificateByHelseIdConfig(defaultConfig));
+            Program.GetCertificateByHelseIdConfig(_defaultConfig));
 
         Assert.AreEqual("No valid certfication was found for: onlyValid=False and FindByThumbprint=non-existent-thumbprint", exception.Message);
     }
@@ -142,52 +136,115 @@ public class SlashMessengerCLITests
     public void ShouldTryToGetCertFromFileIfCertPathProvided_WithoutPassword()
     {
         // Arrange
-        defaultConfig.HelseIdCertificatePath = certWithoutPasswordPath;
-        defaultConfig.HelseIdCertificatePassword = string.Empty;
+        var path = CreateTestCertificateFile(null);
 
-        // Act
-        var cert = Program.GetCertificateByHelseIdConfig(defaultConfig);
+        try
+        {
+            _defaultConfig.HelseIdCertificatePath = path;
+            _defaultConfig.HelseIdCertificatePassword = string.Empty;
 
-        // Assert
-        Assert.IsNotNull(cert);
-        Assert.Contains("Just-For-Testing", cert.Subject);
+            // Act
+            var cert = Program.GetCertificateByHelseIdConfig(_defaultConfig);
+
+            // Assert
+            try
+            {
+                Assert.IsNotNull(cert);
+                Assert.Contains("Test Client", cert.Subject);
+            }
+            finally
+            {
+                cert?.Dispose();
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [TestMethod]
     public void ShouldTryToGetCertFromFileIfCertPathProvided_WithPassword()
     {
         // Arrange
-        defaultConfig.HelseIdCertificatePath = certWithPasswordPath;
-        defaultConfig.HelseIdCertificatePassword = "password";
+        var path = CreateTestCertificateFile("password");
 
-        // Act
-        var cert = Program.GetCertificateByHelseIdConfig(defaultConfig);
+        try
+        {
+            _defaultConfig.HelseIdCertificatePath = path;
+            _defaultConfig.HelseIdCertificatePassword = "password";
 
-        // Assert
-        Assert.IsNotNull(cert);
-        Assert.Contains("Just-For-Testing", cert.Subject);
+            // Act
+            var cert = Program.GetCertificateByHelseIdConfig(_defaultConfig);
+
+            // Assert
+            try
+            {
+                Assert.IsNotNull(cert);
+                Assert.Contains("Test Client", cert.Subject);
+            }
+            finally
+            {
+                cert?.Dispose();
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [TestMethod]
     public void ShouldThrowExceptionIfCertNotFoundByPath()
     {
         // Arrange
-        defaultConfig.HelseIdCertificatePath = "TestFiles/Certs/THIS_CERT_DOES_NOT_EXIST.pfx";
+        _defaultConfig.HelseIdCertificatePath = "non-existent.pfx";
 
         // Act & Assert
         Assert.ThrowsExactly<CryptographicException>(() =>
-            Program.GetCertificateByHelseIdConfig(defaultConfig));
+            Program.GetCertificateByHelseIdConfig(_defaultConfig));
     }
 
     [TestMethod]
     public void ShouldThrowExceptionIfCertFoundByPathWithInvalidPassword()
     {
         // Arrange
-        defaultConfig.HelseIdCertificatePath = certWithPasswordPath;
-        defaultConfig.HelseIdCertificatePassword = "NOT_VALID_PASSWORD";
+        var path = CreateTestCertificateFile("password");
 
-        // Act & Assert
-        Assert.ThrowsExactly<CryptographicException>(() =>
-            Program.GetCertificateByHelseIdConfig(defaultConfig));
+        try
+        {
+            _defaultConfig.HelseIdCertificatePath = path;
+            _defaultConfig.HelseIdCertificatePassword = "NOT_VALID_PASSWORD";
+
+            // Act & Assert
+            Assert.ThrowsExactly<CryptographicException>(() =>
+                Program.GetCertificateByHelseIdConfig(_defaultConfig));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private static string CreateTestCertificateFile(string? password)
+    {
+        var rsa = RSA.Create(2048);
+
+        try
+        {
+            var request = new CertificateRequest("CN=Test Client", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+            using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(1));
+
+            var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pfx");
+
+            File.WriteAllBytes(path, certificate.Export(X509ContentType.Pfx, password ?? string.Empty));
+
+            return path;
+        }
+        finally
+        {
+            rsa.Dispose();
+        }
     }
 }

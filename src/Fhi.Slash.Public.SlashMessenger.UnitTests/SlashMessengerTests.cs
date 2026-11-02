@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.IdentityModel.Tokens;
 using Fhi.Slash.Public.SlashMessenger.HelseId;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Exceptions;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Interfaces;
@@ -11,7 +10,6 @@ using Fhi.Slash.Public.SlashMessenger.Slash.Interfaces;
 using Fhi.Slash.Public.SlashMessenger.Slash.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using NSubstitute;
@@ -21,31 +19,32 @@ namespace Fhi.Slash.Public.SlashMessenger.UnitTests;
 [TestClass]
 public class SlashMessengerTests
 {
-    private readonly string _accessToken = File.ReadAllText("TestFiles/access-token.txt");
-    private readonly string _testMessage = File.ReadAllText("TestFiles/empty_message.json");
-    private readonly JsonDocument _testKeys = JsonDocument.Parse(File.ReadAllText("TestFiles/test_keys.json"))!;
-    private readonly X509Certificate2 _certificate = X509CertificateLoader.LoadPkcs12FromFile("TestFiles/Certs/test_cert_without_password.pfx", string.Empty, X509KeyStorageFlags.Exportable);
-    private readonly JsonWebKey _dPoPProofJwk = new(File.ReadAllText("TestFiles/private_jwk.json"));
+    private readonly TestCryptoFixture _testData;
+    private readonly SlashConfig _defaultSlashConfig;
 
     private readonly Uri _slashBaseUrl = new("https://slash-api.just-a-test.com");
     private readonly Uri _helseIdBaseUrl = new("https://helseid-api.just-a-test.com");
 
     private readonly Dictionary<object, object> _cacheStore = [];
 
-    private readonly SlashConfig _defaultSlashConfig = new()
+    public SlashMessengerTests()
     {
-        BaseUrl = "https://slash-api.just-a-test.com",
-        ExportSoftwareVersion = "1.0.0",
-        SoftwareName = "TestSoftware",
-        SoftwareVersion = "1.0.0",
-        VendorName = "TestVendor",
-    };
+        _testData = new TestCryptoFixture();
+        _defaultSlashConfig = new()
+        {
+            BaseUrl = _slashBaseUrl.AbsoluteUri,
+            ExportSoftwareVersion = "1.0.0",
+            SoftwareName = "TestSoftware",
+            SoftwareVersion = "1.0.0",
+            VendorName = "TestVendor",
+        };
+    }
 
     [TestMethod]
     public async Task ShouldThrowErrorIfMessageIsNotAValidJson()
     {
         // Arrange
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _testData.DPoPProofJwk);
 
         // Act
         var exception = await Assert.ThrowsExactlyAsync<SlashServiceException>(async () =>
@@ -59,7 +58,7 @@ public class SlashMessengerTests
     public async Task ShouldThrowErrorIfMessageIsNotAJsonArray()
     {
         // Arrange
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), Substitute.For<ISlashClient>(), Substitute.For<IHelseIdService>(), _testData.DPoPProofJwk);
 
         // Act
         var exception = await Assert.ThrowsExactlyAsync<SlashServiceException>(async () =>
@@ -81,7 +80,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -89,15 +88,15 @@ public class SlashMessengerTests
 
         var memoryCache = SetupMemoryCacheMock();
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
         var helseIdService = new DefaultHelseIdService(new NullLogger<DefaultHelseIdService>(), memoryCache, helseIdClient);
 
         var slashClient = new DefaultSlashClient(_defaultSlashConfig, new NullLogger<DefaultSlashClient>(), slashHttpFactory);
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _testData.DPoPProofJwk);
 
         // Act
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
+        await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1");
+        await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1");
 
         // Assert
         memoryCache.Received(3).TryGetValue(Arg.Any<object>(), out Arg.Any<object>()!);
@@ -116,7 +115,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -124,16 +123,16 @@ public class SlashMessengerTests
 
         var memoryCache = SetupMemoryCacheMock();
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
         var helseIdService = new DefaultHelseIdService(new NullLogger<DefaultHelseIdService>(), memoryCache, helseIdClient);
 
         var slashClient = new DefaultSlashClient(_defaultSlashConfig, new NullLogger<DefaultSlashClient>(), slashHttpFactory);
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _testData.DPoPProofJwk);
 
         // Act
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "983744516");
-        await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
+        await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
+        await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "983744516");
+        await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
 
         // Assert
         memoryCache.Received(5).TryGetValue(Arg.Any<object>(), out Arg.Any<object>()!);
@@ -154,7 +153,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -164,10 +163,10 @@ public class SlashMessengerTests
                 requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
 
         // Act
-        await helseIdClient.GetAccessToken(_dPoPProofJwk, parentOrganizationNumber);
+        await helseIdClient.GetAccessToken(_testData.DPoPProofJwk, parentOrganizationNumber);
 
         // Assert
         Assert.IsNotNull(requestBody);
@@ -206,7 +205,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -216,10 +215,10 @@ public class SlashMessengerTests
                 requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
 
         // Act
-        await helseIdClient.GetAccessToken(_dPoPProofJwk);
+        await helseIdClient.GetAccessToken(_testData.DPoPProofJwk);
 
         // Assert
         Assert.IsNotNull(requestBody);
@@ -245,7 +244,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -255,10 +254,10 @@ public class SlashMessengerTests
                 requestBody = request.Content?.ReadAsStringAsync(TestContext.CancellationToken).GetAwaiter().GetResult();
             }));
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
 
         // Act
-        await helseIdClient.GetAccessToken(_dPoPProofJwk, parentOrganizationNumber);
+        await helseIdClient.GetAccessToken(_testData.DPoPProofJwk, parentOrganizationNumber);
 
         // Assert
         Assert.IsNotNull(requestBody);
@@ -284,7 +283,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -292,14 +291,14 @@ public class SlashMessengerTests
 
         var memoryCache = SetupMemoryCacheMock();
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
         var helseIdService = new DefaultHelseIdService(new NullLogger<DefaultHelseIdService>(), memoryCache, helseIdClient);
 
         var slashClient = new DefaultSlashClient(_defaultSlashConfig, new NullLogger<DefaultSlashClient>(), slashHttpFactory);
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _testData.DPoPProofJwk);
 
         // Act
-        var response = await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
+        var response = await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1", parentOrganizationNumber: "972418013");
 
         // Assert
         Assert.IsTrue(response.ProcessMessageResponse.Delivered);
@@ -313,17 +312,17 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
         helseIdHttpFactory.CreateClient(helseIdConfig.BasicClientName).Returns(_ => CreateHelseIdClient());
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
 
         // Act
         var exception = await Assert.ThrowsExactlyAsync<HelseIdClientException>(() =>
-            helseIdClient.GetAccessToken(_dPoPProofJwk, "NOT_VALID_ORG_NUMBER"));
+            helseIdClient.GetAccessToken(_testData.DPoPProofJwk, "NOT_VALID_ORG_NUMBER"));
 
         // Assert
         Assert.IsInstanceOfType<ArgumentException>(exception.InnerException);
@@ -341,7 +340,7 @@ public class SlashMessengerTests
         {
             TokenEndpoint = new Uri(_helseIdBaseUrl, "token").AbsoluteUri,
             ClientId = "just-a-test",
-            Certificate = _certificate
+            Certificate = _testData.Certificate
         };
 
         var helseIdHttpFactory = Substitute.For<IHttpClientFactory>();
@@ -349,14 +348,14 @@ public class SlashMessengerTests
 
         var memoryCache = SetupMemoryCacheMock();
 
-        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _dPoPProofJwk);
+        var helseIdClient = new DefaultHelseIdClient(helseIdConfig, new NullLogger<DefaultHelseIdClient>(), helseIdHttpFactory, _testData.DPoPProofJwk);
         var helseIdService = new DefaultHelseIdService(new NullLogger<DefaultHelseIdService>(), memoryCache, helseIdClient);
 
         var slashClient = new DefaultSlashClient(_defaultSlashConfig, new NullLogger<DefaultSlashClient>(), slashHttpFactory);
-        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _dPoPProofJwk);
+        var slashService = new DefaultSlashService(_defaultSlashConfig, new NullLogger<DefaultSlashService>(), slashClient, helseIdService, _testData.DPoPProofJwk);
 
         // Act
-        var response = await slashService.PrepareAndSendMessage(_testMessage, "HST_Konsultasjon", "1");
+        var response = await slashService.PrepareAndSendMessage(_testData.TestMessage, "HST_Konsultasjon", "1");
 
         // Assert
         Assert.IsTrue(response.ProcessMessageResponse.Delivered);
@@ -404,7 +403,7 @@ public class SlashMessengerTests
                         new()
                         {
                             Id = "TESTKEY",
-                            PublicKey = _testKeys.RootElement.GetProperty("publicKey").GetString()!,
+                            PublicKey = _testData.TestKeys.RootElement.GetProperty("publicKey").GetString()!,
                             ExpirationDate = DateTime.Now.AddDays(1)
                         }
                     }))
@@ -461,7 +460,7 @@ public class SlashMessengerTests
                 {
                     Content = new StringContent(JsonSerializer.Serialize(new
                     {
-                        access_token = _accessToken,
+                        access_token = _testData.AccessToken,
                         expires_in = 60,
                         token_type = "DPoP",
                         scope = "fhi:slash.mottak/all"

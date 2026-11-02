@@ -10,43 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="TestFiles\Client\helseid-client-definition.json" />
-    <None Remove="TestFiles\Client\test_cert_without_password.pfx" />
-    <None Remove="TestFiles\Client\test_cert_without_password_2.pfx" />
-    <None Remove="TestFiles\HelseId\access-token.txt" />
-    <None Remove="TestFiles\HelseId\pub-key-set.json" />
-    <None Remove="TestFiles\Slash\priv-key.pem" />
-    <None Remove="TestFiles\Slash\pub-key.pem" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="TestFiles\Client\helseid-client-definition.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Client\empty_message.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Client\test_cert_without_password.pfx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Client\test_cert_without_password_2.pfx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\HelseId\access-token.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\HelseId\pub-key-set.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Slash\priv-key.pem">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TestFiles\Slash\pub-key.pem">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
 	  <PackageReference Include="Microsoft.AspNetCore.Hosting" />
 	  <PackageReference Include="Microsoft.NET.Test.Sdk" />
 	  <PackageReference Include="MSTest" />

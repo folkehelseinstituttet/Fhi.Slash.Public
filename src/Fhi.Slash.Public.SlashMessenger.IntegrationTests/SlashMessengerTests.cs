@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
 using Fhi.Slash.Public.SlashMessenger.Extensions;
 using Fhi.Slash.Public.SlashMessenger.HelseId.Models;
 using Fhi.Slash.Public.SlashMessengerCLI;
@@ -15,47 +14,52 @@ using WireMock;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Aes = System.Security.Cryptography.Aes;
 using Fhi.Slash.Public.SlashMessenger.Slash.Models;
 
 namespace Fhi.Slash.Public.SlashMessenger.IntegrationTests;
 
 [TestClass]
-public sealed class SlashMessengerTests
+public sealed class SlashMessengerTests : IDisposable
 {
-    // Client files
-    private const string ClientCert1FilePath = "TestFiles/Client/test_cert_without_password.pfx";
-    private const string ClientCert2FilePath = "TestFiles/Client/test_cert_without_password_2.pfx";
-    private const string ClientHelseIdClientDefinitionFilePath = "TestFiles/Client/helseid-client-definition.json";
-    private const string ClientTestMessage1FilePath = "TestFiles/Client/empty_message.json";
-    private const string ClientTestMessage1Type = "HST_Konsultasjon";
-    private const string ClientTestMessage1Version = "1";
+    private const string ClientTestMessage = "[]";
+    private const string ClientTestMessageType = "HST_Konsultasjon";
+    private const string ClientTestMessageVersion = "1";
 
-    // Slash files & Endpoints
-    private const string SlashPublicPemFilePath = "TestFiles/Slash/pub-key.pem";
-    private const string SlashPrivatePemFilePath = "TestFiles/Slash/priv-key.pem";
     private const string SlashKeysEndpoint = "/slash/keys";
     private const string SlashMessageEndpoint = "/slash/message";
 
-    // HelseId files & Endpoints
-    private const string HelseIdAccessTokenFilePath = "TestFiles/HelseId/access-token.txt";
-    private const string HelseIdPublicKeySetFilePath = "TestFiles/HelseId/pub-key-set.json";
     private const string HelseIdJWKsEndpoint = "/helseId/.well-known/openid-configuration/jwks";
     private const string HelseIdTokenEndpoint = "/helseId/connect/token";
 
     private readonly WireMockServer _mockServer = WireMockServer.Start();
     private readonly Guid SlashKeyPairId = Guid.NewGuid();
 
+    private readonly TestCryptoFixture _crypto;
+
+    public SlashMessengerTests()
+    {
+        _crypto = new TestCryptoFixture();
+    }
+
     [TestMethod]
     public async Task ClientDefinitionShouldWork()
     {
         // Arrange
         SetupMockServer();
-        var helseIdClientConfig = JsonSerializer.Deserialize<HelseIdClientDefinition>(File.ReadAllText(ClientHelseIdClientDefinitionFilePath));
+        var privateJwkJson = TestCryptoFixture.CreatePrivateJwkJson();
+
+        var clientDefinitionJson = JsonSerializer.Serialize(new
+        {
+            clientId = Guid.Empty,
+            privateJwk = privateJwkJson
+        });
+
+        var clientDefinition = JsonSerializer.Deserialize<HelseIdClientDefinition>(clientDefinitionJson);
+        var helseIdClientConfig = JsonSerializer.Deserialize<HelseIdClientDefinition>(clientDefinitionJson);
         var host = SetupHost(_mockServer.Url!, helseIdClientDefinition: helseIdClientConfig);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var slashResponse = GetResponseLog(_mockServer, SlashMessageEndpoint);
@@ -70,7 +74,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint);
@@ -86,7 +90,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint);
@@ -95,8 +99,8 @@ public sealed class SlashMessengerTests
         var (_, rawDPoPProofPayload, _) = SplitJwt(dPoPProof);
         var dPoPPayload = JsonDocument.Parse(Base64UrlDecode(rawDPoPProofPayload)).RootElement;
 
-        Assert.AreEqual(ClientTestMessage1Type, dPoPPayload.GetProperty("msg_type").GetString());
-        Assert.AreEqual(ClientTestMessage1Version, dPoPPayload.GetProperty("msg_version").GetString());
+        Assert.AreEqual(ClientTestMessageType, dPoPPayload.GetProperty("msg_type").GetString());
+        Assert.AreEqual(ClientTestMessageVersion, dPoPPayload.GetProperty("msg_version").GetString());
         Assert.AreEqual(SlashKeyPairId.ToString(), dPoPPayload.GetProperty("enc_key_id").GetString());
         Assert.IsNotNull(dPoPPayload.GetProperty("msg_hash"));
         Assert.IsNotNull(dPoPPayload.GetProperty("enc_sym_key"));
@@ -110,7 +114,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint);
@@ -120,7 +124,7 @@ public sealed class SlashMessengerTests
         var dPoPPayload = JsonDocument.Parse(Base64UrlDecode(rawDPoPProofPayload)).RootElement;
         var dPoPMsgHash = dPoPPayload.GetProperty("msg_hash").GetString();
         var encSymKey = dPoPPayload.GetProperty("enc_sym_key").GetString();
-        var privateKey = ConvertPemToPrivateJwk(File.ReadAllText(SlashPrivatePemFilePath));
+        var privateKey = ConvertPemToPrivateJwk(_crypto.SlashPrivatePem);
 
         var encSymKeyBytes = Base64UrlEncoder.DecodeBytes(encSymKey!);
         var symKey = CreateRsaFromJwk(privateKey).Decrypt(encSymKeyBytes, RSAEncryptionPadding.OaepSHA256);
@@ -130,7 +134,7 @@ public sealed class SlashMessengerTests
         var msgHash = Base64UrlEncoder.Encode(SHA256.HashData(Encoding.UTF8.GetBytes(msg)));
 
         Assert.AreEqual(dPoPMsgHash, msgHash);
-        Assert.AreEqual(File.ReadAllText(ClientTestMessage1FilePath), msg);
+        Assert.AreEqual(ClientTestMessage, msg);
     }
 
     [TestMethod]
@@ -141,7 +145,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var slashRequest = GetRequestLog(_mockServer, SlashMessageEndpoint)!;
@@ -158,7 +162,7 @@ public sealed class SlashMessengerTests
     {
         // Arrange
         SetupMockServer();
-        var dpopCert = LoadCertificate(ClientCert2FilePath);
+        var dpopCert = _crypto.ClientCert2;
         var dPoPJwk = JsonWebKeyConverter.ConvertFromX509SecurityKey(new X509SecurityKey(dpopCert), true);
         var host = SetupHost(_mockServer.Url!, services =>
         {
@@ -166,7 +170,7 @@ public sealed class SlashMessengerTests
         });
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var helseIdRequest = GetRequestLog(_mockServer, HelseIdTokenEndpoint);
@@ -174,11 +178,11 @@ public sealed class SlashMessengerTests
         var (header, payload, signature) = SplitJwt(rawDPoPProof);
 
         AssertJwtSignature(dpopCert, header, payload, signature, shouldBeValid: true);
-        AssertJwtSignature(LoadCertificate(ClientCert1FilePath), header, payload, signature, shouldBeValid: false);
+        AssertJwtSignature(_crypto.ClientCert1, header, payload, signature, shouldBeValid: false);
 
         var parameters = System.Web.HttpUtility.ParseQueryString(helseIdRequest!.Body!);
         var (accessTokenHeader, accessTokenPayload, accessTokenSignature) = SplitJwt(parameters["client_assertion"]!);
-        AssertJwtSignature(LoadCertificate(ClientCert1FilePath), accessTokenHeader, accessTokenPayload, accessTokenSignature, shouldBeValid: true);
+        AssertJwtSignature(_crypto.ClientCert1, accessTokenHeader, accessTokenPayload, accessTokenSignature, shouldBeValid: true);
     }
 
     [TestMethod]
@@ -189,7 +193,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var helseIdRequest = GetRequestLog(_mockServer, HelseIdTokenEndpoint);
@@ -200,7 +204,7 @@ public sealed class SlashMessengerTests
         Assert.AreEqual("urn:ietf:params:oauth:client-assertion-type:jwt-bearer", parameters["client_assertion_type"]);
 
         var (accessTokenHeader, accessTokenPayload, accessTokenSignature) = SplitJwt(parameters["client_assertion"]!);
-        AssertJwtSignature(LoadCertificate(ClientCert1FilePath), accessTokenHeader, accessTokenPayload, accessTokenSignature, shouldBeValid: true);
+        AssertJwtSignature(_crypto.ClientCert1, accessTokenHeader, accessTokenPayload, accessTokenSignature, shouldBeValid: true);
     }
 
     [TestMethod]
@@ -211,7 +215,7 @@ public sealed class SlashMessengerTests
         var host = SetupHost(_mockServer.Url!);
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var helseIdRequest = GetRequestLog(_mockServer, HelseIdTokenEndpoint);
@@ -221,7 +225,7 @@ public sealed class SlashMessengerTests
         AssertJwtHeader(header, "dpop+jwt", "RS256");
         AssertJwtPayload(payload, "POST", $"{_mockServer.Url!}{HelseIdTokenEndpoint}");
 
-        var dpopCert = LoadCertificate(ClientCert1FilePath);
+        var dpopCert = _crypto.ClientCert1;
         AssertJwtSignature(dpopCert, header, payload, signature, shouldBeValid: true);
     }
 
@@ -244,7 +248,7 @@ public sealed class SlashMessengerTests
         });
 
         // Act
-        await Program.Execute(host, ClientTestMessage1FilePath, ClientTestMessage1Type, ClientTestMessage1Version);
+        await Program.ExecuteWithMessage(host, ClientTestMessage, ClientTestMessageType, ClientTestMessageVersion);
 
         // Assert
         var getKeysRequest = GetRequestLog(_mockServer, SlashKeysEndpoint);
@@ -257,8 +261,13 @@ public sealed class SlashMessengerTests
     {
         // HelseId JWK
         _mockServer
-          .Given(Request.Create().WithPath(HelseIdJWKsEndpoint).UsingGet())
-          .RespondWith(Response.Create().WithStatusCode(HttpStatusCode.OK).WithBodyAsJson(JObject.Parse(File.ReadAllText(HelseIdPublicKeySetFilePath))));
+            .Given(Request.Create()
+                .WithPath(HelseIdJWKsEndpoint)
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(HttpStatusCode.OK)
+                .WithBody(_crypto.HelseIdJwks)
+                .WithHeader("Content-Type", "application/json"));
 
         // HelseId Token
         const string nonce = "just-a-nonce";
@@ -299,24 +308,33 @@ public sealed class SlashMessengerTests
 
               return dPoPToken.Payload.TryGetValue("nonce", out var nonceValue) && nonceValue?.Equals(nonce) == true;
           }))
-          .RespondWith(Response.Create().WithStatusCode(HttpStatusCode.OK).WithBodyAsJson(new
-          {
-              access_token = File.ReadAllText(HelseIdAccessTokenFilePath),
-              expires_in = 60,
-              token_type = "DPoP",
-              scope = "fhi:slash.mottak/all"
-          }));
+        .RespondWith(Response.Create()
+            .WithStatusCode(HttpStatusCode.OK)
+            .WithBodyAsJson(new
+            {
+                access_token = _crypto.HelseIdAccessToken,
+                expires_in = 60,
+                token_type = "DPoP",
+                scope = "fhi:slash.mottak/all"
+            }));
 
         // Slash Public Keys
         _mockServer
-           .Given(Request.Create().WithPath(SlashKeysEndpoint).UsingGet())
-           .RespondWith(Response.Create().WithStatusCode(HttpStatusCode.OK).WithBodyAsJson(JArray.FromObject(new[]{new
-           {
-               id = SlashKeyPairId,
-               publicKey = File.ReadAllText(SlashPublicPemFilePath),
-               expirationDate = DateTime.Now.AddDays(1),
-               isExpired = false
-           }})));
+            .Given(Request.Create()
+                .WithPath(SlashKeysEndpoint)
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(HttpStatusCode.OK)
+                .WithBodyAsJson(new[]
+                {
+                    new
+                    {
+                        id = SlashKeyPairId,
+                        publicKey = _crypto.SlashPublicPem,
+                        expirationDate = DateTime.Now.AddDays(1),
+                        isExpired = false
+                    }
+                }));
 
         // Slash Message
         _mockServer
@@ -331,7 +349,7 @@ public sealed class SlashMessengerTests
                 }));
     }
 
-    private static IHost SetupHost(string baseUrl, Action<IServiceCollection>? preCustomConfig = null, HelseIdClientDefinition? helseIdClientDefinition = null) =>
+    private IHost SetupHost(string baseUrl, Action<IServiceCollection>? preCustomConfig = null, HelseIdClientDefinition? helseIdClientDefinition = null) =>
         Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
@@ -347,15 +365,11 @@ public sealed class SlashMessengerTests
                 {
                     helseIdConfig.TokenEndpoint = $"{baseUrl}/helseId/connect/token";
                     helseIdConfig.ClientId = "just-a-test-client";
-                    helseIdConfig.Certificate = helseIdClientDefinition == null ? X509CertificateLoader.LoadPkcs12FromFile(ClientCert1FilePath, string.Empty, X509KeyStorageFlags.Exportable) : null;
+                    helseIdConfig.Certificate = helseIdClientDefinition == null ? _crypto.ClientCert1 : null;
                     helseIdConfig.ClientDefinition = helseIdClientDefinition;
                 });
             })
             .Build();
-
-    private static X509Certificate2 LoadCertificate(string path) =>
-        X509CertificateLoader.LoadPkcs12FromFile(path, string.Empty, X509KeyStorageFlags.Exportable);
-
 
     private static (string Header, string Payload, string Signature) SplitJwt(string jwt)
     {
@@ -492,4 +506,9 @@ public sealed class SlashMessengerTests
     private static Dictionary<string, string?> ParseQueryParameters(string body) =>
         System.Web.HttpUtility.ParseQueryString(body).Cast<string>()
             .ToDictionary(k => k, v => System.Web.HttpUtility.ParseQueryString(body)[v]);
+
+    public void Dispose()
+    {
+        _crypto.Dispose();
+    }
 }

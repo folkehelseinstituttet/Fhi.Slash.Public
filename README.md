@@ -396,6 +396,7 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 
 | Feilkode | Feilmelding                                               | Beskrivelse                                                                 |
 | -------- | --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 0        | Unknown                                                   | Ukjent feil eller generell valideringsfeil                                  |
 | 1001     | HttpHeaderMissing                                         | Én eller flere manglende HTTP header-verdier                                |
 | 1002     | HttpHeaderValidation                                      | Ugyldig verdi på én eller flere HTTP-headere                                |
 | 1003     | InvalidMessageTypeVersion                                 | Ugyldig meldingstype og/eller meldingsversjon                               |
@@ -408,13 +409,14 @@ I tillegg vil en motta ytterligere informasjon om hva som feilet i body. Eksempe
 | 2001     | ShouldNotReceiveMessageForGivenOrganizationAndMessageType | API-tjenesten godtar ikke meldinger av gitt meldingstype fra organisasjonen |
 | 2002     | MissingOrganizationNumberClaimFromHelseIdToken            | Access Token fra HelseID inneholder ikke organisasjonsnummer                |
 | 2003     | MissingSignatureClaimFromHelseIdToken                     | Mangler signatur-claim i Access Token fra HelseID                           |
-| 2004     | BadSignatureClaimFromHelseIdToken                         | Ugyldig format på signatur-claim i Access Token fra HelseID                 |
+| 2004     | BadMessageHash                                            | Hash av dekryptert melding samsvarer ikke med oppgitt hash                  |
 | 2005     | HelseIdSignatureDoesNotMatchHeaderValues                  | Signatur i Access Token fra HelseID samsvarer ikke med header-verdi         |
-| 2006     | SchemaNotFound                                            | Fant ikke skjema som korresponderer med meldingstype og -versjon            |
-| 2007     | InvalidJsonMessage                                        | Dekryptert melding er ikke Json-format                                      |
-| 2008     | SchemaValidationFailed                                    | Dekryptert melding samsvarer ikke med meldingsskjema                        |
-| 2009     | PayloadSizeLimitExceeded                                  | Payload size exceeded limit                                                 |
-| 2010     | StorageError                                              | Failed to store the message                                                 |
+| 2006     | SchemaValidationFailed                                    | Dekryptert melding samsvarer ikke med meldingsskjema                        |
+| 2007     | SchemaNotFound                                            | Fant ikke skjema som korresponderer med meldingstype og -versjon            |
+| 2008     | InvalidJsonPayload                                        | Dekryptert melding er ikke gyldig JSON                                      |
+| 2009     | PayloadSizeLimitExceeded                                  | Meldingen er større enn tillatt                                             |
+| 2010     | StorageError                                              | Meldingen kunne ikke lagres                                                 |
+| 2011     | MissingOrganizationNumberClaimFromMaskinportenToken       | Access Token fra Maskinporten inneholder ikke organisasjonsnummer           |
 
 #### 6) Utvidet kvittering
 API-et kan returnere en utvidet kvittering som gir detaljert informasjon om behandling av meldingen.
@@ -512,9 +514,11 @@ Ved oppstart eller når man har en større mengde historiske data for innsending
 
 ## Miljøer og API
 
-- ET (Eksternt Testmiljø): https://app-mottak-api-et.azurewebsites.net/ (Azure) ([Link til Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html))
-- QA/Pilot: https://apimottak01.qa.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.qa.fihr.no/swagger/index.html))
-- Prod: https://apimottak01.fihr.no/ (Helsenett) ([Link til Swagger](https://apimottak01.fihr.no/swagger/index.html))
+| Miljø | Tilgjengelig fra | HelseID | API | Swagger |
+|-------|------------------|---------|-----|---------|
+| **Test** (ET – Eksternt Testmiljø) | Internett | HelseID Test | [app-mottak-api-et.azurewebsites.net](https://app-mottak-api-et.azurewebsites.net/) | [Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html) |
+| **QA/Pilot** | Helsenett | HelseID Prod | [apimottak01.qa.fihr.no](https://apimottak01.qa.fihr.no/) | [Swagger](https://apimottak01.qa.fihr.no/swagger/index.html) |
+| **Prod** | Helsenett | HelseID Prod | [apimottak01.fihr.no](https://apimottak01.fihr.no/) | [Swagger](https://apimottak01.fihr.no/swagger/index.html) |
 
 <div style="page-break-after: always"></div>
 
