@@ -62,7 +62,7 @@ public static class ServiceCollectionExtensions
             ValidateCertificate(helseIdConfig.Certificate);
 
             helseIdJwk = JsonWebKeyConverter.ConvertFromX509SecurityKey(new X509SecurityKey(helseIdConfig.Certificate), true);
-            helseIdJwk.Alg = SecurityAlgorithms.RsaSha256;
+            helseIdJwk.Alg = SecurityAlgorithms.RsaSsaPssSha512;
         }
         else if (helseIdConfig.ClientDefinition != null)
         {
@@ -110,7 +110,7 @@ public static class ServiceCollectionExtensions
     {
         if (certificate.GetRSAPublicKey() == null)
         {
-            throw new InvalidOperationException("The certificate does not contain an RSA key and cannot support RS256.");
+            throw new InvalidOperationException("The certificate does not contain an RSA key and cannot support PS512.");
         }
 
         var keyUsageExtension = certificate.Extensions
@@ -119,12 +119,7 @@ public static class ServiceCollectionExtensions
 
         if (keyUsageExtension == null || !keyUsageExtension.KeyUsages.HasFlag(X509KeyUsageFlags.DigitalSignature))
         {
-            throw new InvalidOperationException("Certificate does not support digital signatures and cannot be used for RS256.");
-        }
-
-        if (certificate.SignatureAlgorithm.FriendlyName != "sha256RSA")
-        {
-            throw new InvalidOperationException("Certificate does not use sha256RSA as the signature algorithm.");
+            throw new InvalidOperationException("Certificate does not support digital signatures and cannot be used for PS512.");
         }
     }
 

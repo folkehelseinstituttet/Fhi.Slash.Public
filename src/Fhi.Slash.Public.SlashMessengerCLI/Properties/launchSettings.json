@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Fhi.Slash.Public.SlashMessengerCLI": {
+        "commandName": "Project",
+        "environmentVariables": {
+            "DOTNET_ENVIRONMENT": "Development"
+        }
+    }
+    }
+}

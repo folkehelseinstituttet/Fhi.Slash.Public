@@ -232,7 +232,7 @@ public class SlashMessengerCLITests
 
         try
         {
-            var request = new CertificateRequest("CN=Test Client", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            var request = new CertificateRequest("CN=Test Client", rsa, HashAlgorithmName.SHA512, RSASignaturePadding.Pss);
 
             using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(1));
 

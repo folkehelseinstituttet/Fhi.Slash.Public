@@ -222,7 +222,7 @@ public sealed class SlashMessengerTests : IDisposable
         var rawDPoPProof = helseIdRequest!.Headers!["DPoP"].First();
         var (header, payload, signature) = SplitJwt(rawDPoPProof);
 
-        AssertJwtHeader(header, "dpop+jwt", "RS256");
+        AssertJwtHeader(header, "dpop+jwt", SecurityAlgorithms.RsaSsaPssSha512);
         AssertJwtPayload(payload, "POST", $"{_mockServer.Url!}{HelseIdTokenEndpoint}");
 
         var dpopCert = _crypto.ClientCert1;
@@ -398,8 +398,8 @@ public sealed class SlashMessengerTests : IDisposable
         var isValid = rsa!.VerifyData(
             Encoding.UTF8.GetBytes($"{header}.{payload}"),
             Base64UrlDecodeBytes(signature),
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1);
+            HashAlgorithmName.SHA512,
+            RSASignaturePadding.Pss);
 
         Assert.AreEqual(shouldBeValid, isValid);
     }
@@ -450,7 +450,7 @@ public sealed class SlashMessengerTests : IDisposable
             DQ = Base64UrlEncoder.Encode(parameters.DQ),
             QI = Base64UrlEncoder.Encode(parameters.InverseQ),
             Use = "sig",
-            Alg = "RS256"
+            Alg = SecurityAlgorithms.RsaSsaPssSha512
         };
 
         return jwk;

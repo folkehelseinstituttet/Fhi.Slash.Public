@@ -37,7 +37,7 @@ Dette dokumentet er en veiledning for bruk av SlashMessenger-pakken i NuGet. Det
 
 Eksempelkoden i dette prosjektet er skrevet i .Net 10 (C#) og benytter seg av NuGet-pakken `Fhi.Slash.Public.SlashMessenger` som ligger ute på [nuget.org](https://www.nuget.org/packages/Fhi.Slash.Public.SlashMessenger).
 
-Konfigurasjoner av de ulike verdiene kan gjøres i `appsettings.json` (eller `appsettings.Development.json` ved lokal testing).
+Konfigurasjoner av de ulike verdiene kan gjøres i `appsettings.json`, eller user secrets/`appsettings.Development.json` ved lokal testing.
 Her har du mulighet til å endre informasjon om innsender, som for eksempel navn på EPJ-system og versjoner.
 Oppsett av HelseID og konfigurasjoner av HelseID-klient skal også inn i disse filene.
 

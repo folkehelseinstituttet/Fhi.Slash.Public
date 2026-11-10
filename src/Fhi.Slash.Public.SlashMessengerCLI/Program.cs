@@ -13,7 +13,7 @@ using Duende.IdentityModel.Client;
 
 namespace Fhi.Slash.Public.SlashMessengerCLI;
 
-public static class Program
+public class Program
 {
     private static IHost? _host;
 
@@ -92,10 +92,17 @@ public static class Program
 
     private static async Task<IHost> SetupHost(DateTime? dataExtractionDate = null)
     {
-        var appsettingsConfig = new ConfigurationBuilder()
+        var appsettingsBuilder = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: false)
-            .Build();
+            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: false);
+
+        bool isDevelopment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")?.Equals("Development", StringComparison.OrdinalIgnoreCase) ?? false;
+        if (isDevelopment)
+        {
+            appsettingsBuilder.AddUserSecrets<Program>(optional: true);
+        }
+
+        var appsettingsConfig = appsettingsBuilder.Build();
 
         // Get HelseId Discovery Document
         var helseIdOpenIdConfigUrl =

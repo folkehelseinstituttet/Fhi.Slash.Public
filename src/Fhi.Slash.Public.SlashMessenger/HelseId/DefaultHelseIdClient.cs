@@ -134,7 +134,7 @@ public class DefaultHelseIdClient : IHelseIdClient
             new(JwtClaimTypes.JwtId, Guid.NewGuid().ToString("N"))
         };
 
-        var signingCredentials = new SigningCredentials(_helseIdJwk, SecurityAlgorithms.RsaSha256);
+        var signingCredentials = new SigningCredentials(_helseIdJwk, SecurityAlgorithms.RsaSsaPssSha512);
 
         var header = new JwtHeader(signingCredentials, null, "client-authentication+jwt");
 

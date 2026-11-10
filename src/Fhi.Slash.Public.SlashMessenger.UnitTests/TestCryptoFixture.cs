@@ -31,7 +31,7 @@ public sealed class TestCryptoFixture : IDisposable
     {
         using var rsa = RSA.Create(2048);
 
-        var request = new CertificateRequest("CN=Test Client", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var request = new CertificateRequest("CN=Test Client", rsa, HashAlgorithmName.SHA512, RSASignaturePadding.Pss);
 
         request.CertificateExtensions.Add(
             new X509KeyUsageExtension(
@@ -57,7 +57,7 @@ public sealed class TestCryptoFixture : IDisposable
         {
             Kty = "RSA",
             Use = "sig",
-            Alg = "RS256",
+            Alg = SecurityAlgorithms.RsaSsaPssSha512,
             N = Base64UrlEncoder.Encode(p.Modulus!),
             E = Base64UrlEncoder.Encode(p.Exponent!),
             D = Base64UrlEncoder.Encode(p.D!),

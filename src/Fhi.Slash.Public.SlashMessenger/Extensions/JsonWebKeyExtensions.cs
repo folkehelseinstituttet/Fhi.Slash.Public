@@ -25,7 +25,7 @@ internal static class JsonWebKeyExtensions
         string? accessToken = null,
         Dictionary<string, string>? customPayloadClaims = null)
     {
-        var signingCredentials = new SigningCredentials(jwk, algorithm: jwk.Alg ?? SecurityAlgorithms.RsaSha256);
+        var signingCredentials = new SigningCredentials(jwk, jwk.Alg ?? SecurityAlgorithms.RsaSsaPssSha512);
 
         var newJwk = jwk.Kty switch
         {

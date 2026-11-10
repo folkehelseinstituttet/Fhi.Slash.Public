@@ -41,6 +41,12 @@ Se [Eksempelkode](#eksempelkode) for mer informasjon.
       - [4) Send melding til API-tjenesten](#4-send-melding-til-api-tjenesten)
       - [5 a) Innlevering godkjent](#5-a-innlevering-godkjent)
       - [5 b) Innlevering feilet](#5-b-innlevering-feilet)
+      - [6) Utvidet kvittering](#6-utvidet-kvittering)
+  - [Feilhåndtering, maks størrelse, rekkefølge og køing av meldinger](#feilhåndtering-maks-størrelse-rekkefølge-og-køing-av-meldinger)
+    - [Initial last / større innsendinger](#initial-last--større-innsendinger)
+      - [1. Oppdeling i batcher](#1-oppdeling-i-batcher)
+      - [2. Sekvens og kvittering](#2-sekvens-og-kvittering)
+      - [3. Løpende innsending etter initial last](#3-løpende-innsending-etter-initial-last)
   - [Miljøer og API](#miljøer-og-api)
   - [Referanser](#referanser)
 
@@ -225,22 +231,22 @@ Lag et DPoP-bevis og legg dette i header-verdien "DPoP".
 
 ```json
 {
-  "alg": "RS256",
-  "kid": "0-8E4RNYlw_aFRE-fVtclOLDgHtQB2KfzDIgTbE5X7g",
+  "alg": "PS512",
+  "kid": "3B08C700785149216D8AFF55CDC07BFF98EE57D5",
   "typ": "dpop+jwt",
   "jwk": {
     "kty": "RSA",
-    "n": "nqI3e2qx30o08bw9mdW5CTxPaIyY3-UdYgF7Oa04P8wrEpcHIpWmPuYlNLLysWYEDPJa7SCRXL9X8pMHdF0t6b8Lago_Va4PFd0T8D6sWEmN3YH3KQNzxOQhqko3ojsQCGWhuM3zP47cfyk0PfoE4zYqUZZrYHiIgECbEjM0TRJCRrl6K7YEIWlnd5qVLFaXZiEEfITXAJrV6xaYHGducXzOlaqq89NsgmbGBUb4Kac8GU9tAuF6fdCUtLqfoTv0lsMnRoZHwTsSNrnrMjToRBdyDoQWIVydhTn5w61CMWnSksEXMShYDeTwTvrPOoKRncii6s2P3j9eEi9Okh6RbQ",
+    "n": "zlXkbs7XB6Lk7aN6CjvWAR2o9C4VhAErFDAxldZL-7PPYvZP-AKvTn9nIQDuOlY9XoD8ZjKTHp4lTw9vj9JigKwH2LO-eKAfSmEJdkBn2729195oWVrVZtkRjpLDfWhddsrt-b1bO1AksxO8hVIOj8Fh67XvqBT7y2CfIWI1TJEVQ-yCvN4ZGy7lgXzGhmmkkStl9xl3kD3t6o_eSuBecr9HVKMNN_38XlhckSAM5gDPWlwSrTEYCf9hmFD2A_zaifj0ZCCAMTrSl5moecgt9dhFviDEBszLAQdKDKxZsoGUsdS5WyWWOwxTigR7fM9B6uaoT73oMtp6BClhsHLfGQ",
     "e": "AQAB",
-    "alg": "RS256"
+    "alg": "PS512"
   }
 }
 .
 {
-  "jti": "3319f016-9760-413e-9529-06fd88de0093",
+  "jti": "20b7b10f-bdb2-49ba-980d-8c4353132398",
   "htm": "POST",
   "htu": "https://helseid-sts.test.nhn.no/connect/token",
-  "iat": 1715356172
+  "iat": 1793788949
 }
 .
 [Signature]
@@ -252,16 +258,16 @@ Lag en JWT med client assertion
 
 ```json
 {
-  "alg": "RS256",
+  "alg": "PS512",
   "typ": "JWT"
 }
 .
 {
   "sub": "1185d326-422d-43e0-8c3c-4111d6fd4224",
-  "iat": "1715356172",
-  "jti": "00d0e27bc24947d6970a73fe1088863f",
-  "nbf": 1715356172,
-  "exp": 1715356232,
+  "iat": "1793788949",
+  "jti": "414b18969a684d2f8988055ccf1f7c4a",
+  "nbf": 1793788949,
+  "exp": 1793789009,
   "iss": "1185d326-422d-43e0-8c3c-4111d6fd4224",
   "aud": "https://helseid-sts.test.nhn.no/"
 }
@@ -306,28 +312,28 @@ Lag et nytt DPoP-bevis for innsending til API-tjenesten
 
 ```json
 {
-  "alg": "RS256",
-  "kid": "0-8E4RNYlw_aFRE-fVtclOLDgHtQB2KfzDIgTbE5X7g",
+  "alg": "PS512",
+  "kid": "3B08C700785149216D8AFF55CDC07BFF98EE57D5",
   "typ": "dpop+jwt",
   "jwk": {
     "kty": "RSA",
-    "n": "nqI3e2qx30o08bw9mdW5CTxPaIyY3-UdYgF7Oa04P8wrEpcHIpWmPuYlNLLysWYEDPJa7SCRXL9X8pMHdF0t6b8Lago_Va4PFd0T8D6sWEmN3YH3KQNzxOQhqko3ojsQCGWhuM3zP47cfyk0PfoE4zYqUZZrYHiIgECbEjM0TRJCRrl6K7YEIWlnd5qVLFaXZiEEfITXAJrV6xaYHGducXzOlaqq89NsgmbGBUb4Kac8GU9tAuF6fdCUtLqfoTv0lsMnRoZHwTsSNrnrMjToRBdyDoQWIVydhTn5w61CMWnSksEXMShYDeTwTvrPOoKRncii6s2P3j9eEi9Okh6RbQ",
+    "n": "zlXkbs7XB6Lk7aN6CjvWAR2o9C4VhAErFDAxldZL-7PPYvZP-AKvTn9nIQDuOlY9XoD8ZjKTHp4lTw9vj9JigKwH2LO-eKAfSmEJdkBn2729195oWVrVZtkRjpLDfWhddsrt-b1bO1AksxO8hVIOj8Fh67XvqBT7y2CfIWI1TJEVQ-yCvN4ZGy7lgXzGhmmkkStl9xl3kD3t6o_eSuBecr9HVKMNN_38XlhckSAM5gDPWlwSrTEYCf9hmFD2A_zaifj0ZCCAMTrSl5moecgt9dhFviDEBszLAQdKDKxZsoGUsdS5WyWWOwxTigR7fM9B6uaoT73oMtp6BClhsHLfGQ",
     "e": "AQAB",
-    "alg": "RS256"
+    "alg": "PS512"
   }
 }
 .
 {
-  "jti": "5629c0cf-ef59-4058-b831-fbb573aad334",
+  "jti": "d11378f6-e744-4bbc-9098-9cc9ce840516",
   "htm": "POST",
   "htu": "https://app-mottak-api-et.azurewebsites.net/message",
-  "iat": 1715426416,
+  "iat": 1793791986,
   "msg_type": "HST_Konsultasjon",
   "msg_version": "1",
-  "msg_hash": "XqOR1SZn1IchuHWWbWQ6rI1MWm4Bo0cmISenZZZLU1s",
-  "enc_sym_key": "PTimgMeCZlKHik2kpkqrHa/RLoGwN7RDGm5Iee7VBKEygWxuzSNfQOUg7ybUHfjiVsv0uEEgiMtcXQeCZFlZfJtsad7ut9gZhHp699aPqR5J+Px5lgZJyyW1PPyE1uooyWcHMszxZV35WioRKDD0+cdUzZ0h6a8fiyJPxVhrcm/nhCHFBvkitbWaL2Ye0yiTc8t/H45RTjcZ9AOvW7awG8rtNPpOFF7nLZQ2BknliKvInLxRwCOBmBc2jfkaj2LiEW9+2gPzVEOTyRx6bKcRSXwLi7EUtwNT7NoqCs5RG2aG6eunZjg16i6HfZx8M4hg6I73yG9UI5oKcpRDEfFc9IsrDTBMnBGy0Cvjn6d0o8NqkRFNfsqbXWrVqhKKx9C62qTFRKvVbEXlzReUVK4YWMl/TOMQre6rBOjNqfOkoUEv51R8hpMNDbTJIxY0O55e3wtLIGRYNt4x0FzV3cmL2Dr314c2NNhI5zmR++Iy3+/r5lZWH0UkiYO+sORASw1U",
-  "enc_key_id": "AC39844BF1257C29C82A7845F9C0F3C936183104",
-  "ath": "_j4ZpplB6TBA-7EeIoHOnwqJf9XgItc1CXSti12ZD28"
+  "msg_hash": "T1PNoYwrqgwDVLtfmj7L5e0Sq02OEbqHPC8RFhICuUU",
+  "enc_sym_key": "mrE43WYCtRS_FGxlJ3GzmsmGgkyRdi0x6uJU1AeJZ-3hPZD7v1lIY-9q52inVs6IOTknHDWPxytwVdep6t3DgCRA5Kp3LYdETqbesaeV89EYA4bRO4kGr2OHhivrKSk4CPAYyDopbXJZGurPAm8Kug8MP21L2pp9mSpIXI1eCJWeMg3M5LyNjIxgegRqa7aGLQUt9Gb6uIi52I_wChuZ9L3bv_ADe33QFVQ9YeT432_9AHvNDDi0EyNWYernmM0JInSuycqnL4Re3mjBKKS5Oicj0T4gUGCRKIV-xe6YKkqhx9Fv8y2t5J5AfOff7uaNVbSUN8pXlNjxa6L6hSisRQ",
+  "enc_key_id": "159b9cc3-5b80-4785-9ac6-9301fffb86fc",
+  "ath": "8vCbvzarIV2bxWSyWaIhLjgoHoNOh7dvwVV4XZkuM9c"
 }
 .
 [Signature]
@@ -514,11 +520,11 @@ Ved oppstart eller når man har en større mengde historiske data for innsending
 
 ## Miljøer og API
 
-| Miljø | Tilgjengelig fra | HelseID | API | Swagger |
-|-------|------------------|---------|-----|---------|
-| **Test** (ET – Eksternt Testmiljø) | Internett | HelseID Test | [app-mottak-api-et.azurewebsites.net](https://app-mottak-api-et.azurewebsites.net/) | [Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html) |
-| **QA/Pilot** | Helsenett | HelseID Prod | [apimottak01.qa.fihr.no](https://apimottak01.qa.fihr.no/) | [Swagger](https://apimottak01.qa.fihr.no/swagger/index.html) |
-| **Prod** | Helsenett | HelseID Prod | [apimottak01.fihr.no](https://apimottak01.fihr.no/) | [Swagger](https://apimottak01.fihr.no/swagger/index.html) |
+| Miljø                              | Tilgjengelig fra | HelseID      | API                                                                                 | Swagger                                                                   |
+| ---------------------------------- | ---------------- | ------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Test** (ET – Eksternt Testmiljø) | Internett        | HelseID Test | [app-mottak-api-et.azurewebsites.net](https://app-mottak-api-et.azurewebsites.net/) | [Swagger](https://app-mottak-api-et.azurewebsites.net/swagger/index.html) |
+| **QA/Pilot**                       | Helsenett        | HelseID Prod | [apimottak01.qa.fihr.no](https://apimottak01.qa.fihr.no/)                           | [Swagger](https://apimottak01.qa.fihr.no/swagger/index.html)              |
+| **Prod**                           | Helsenett        | HelseID Prod | [apimottak01.fihr.no](https://apimottak01.fihr.no/)                                 | [Swagger](https://apimottak01.fihr.no/swagger/index.html)                 |
 
 <div style="page-break-after: always"></div>
 

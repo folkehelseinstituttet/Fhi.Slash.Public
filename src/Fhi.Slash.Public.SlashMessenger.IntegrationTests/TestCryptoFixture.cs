@@ -32,7 +32,7 @@ public sealed class TestCryptoFixture : IDisposable
         {
             Kty = "RSA",
             Use = "sig",
-            Alg = "RS256",
+            Alg = SecurityAlgorithms.RsaSsaPssSha512,
             N = Base64UrlEncoder.Encode(parameters.Modulus),
             E = Base64UrlEncoder.Encode(parameters.Exponent),
             D = Base64UrlEncoder.Encode(parameters.D),
@@ -50,7 +50,7 @@ public sealed class TestCryptoFixture : IDisposable
     {
         using var rsa = RSA.Create(2048);
 
-        var request = new CertificateRequest($"CN={subject}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var request = new CertificateRequest($"CN={subject}", rsa, HashAlgorithmName.SHA512, RSASignaturePadding.Pss);
 
         request.CertificateExtensions.Add(
             new X509KeyUsageExtension(
@@ -82,7 +82,7 @@ public sealed class TestCryptoFixture : IDisposable
                 {
                     Kty = "RSA",
                     Use = "sig",
-                    Alg = "RS256",
+                    Alg = SecurityAlgorithms.RsaSsaPssSha512,
                     Kid = keyId,
                     N = Encode(parameters.Modulus!),
                     E = Encode(parameters.Exponent!)
@@ -98,7 +98,7 @@ public sealed class TestCryptoFixture : IDisposable
             KeyId = "helseid-test-key"
         };
 
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256);
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.RsaSsaPssSha512);
 
         var token = new JwtSecurityToken(
             issuer: "test-issuer",

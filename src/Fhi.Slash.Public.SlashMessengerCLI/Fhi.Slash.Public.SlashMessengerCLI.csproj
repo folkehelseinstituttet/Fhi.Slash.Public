@@ -23,6 +23,7 @@
 
 	<PropertyGroup>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
+		<UserSecretsId>71b941c7-f2eb-42d8-92c8-ff6e26d188d2</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>
